@@ -1,0 +1,90 @@
+﻿<Window x:Class="FistirDictionary.NewDictionaryDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:FistirDictionary"
+        mc:Ignorable="d"
+        Closing="Window_Closing"
+        MinHeight="200"
+        MinWidth="300"
+        SizeToContent="WidthAndHeight"
+        ResizeMode="NoResize"
+        Title="空の辞書を作成" Height="450" Width="800">
+    <Grid Margin="12">
+        <DockPanel LastChildFill="True">
+            <Grid DockPanel.Dock="Bottom">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*" />
+                    <ColumnDefinition Width="1*" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="cancelButton" Margin="8,8,8,8" Padding="8" Grid.Column="0" Grid.Row="3" Content="キャンセル" IsCancel="True" Click="CancelButton_Click" />
+                <Button x:Name="okButton" Margin="8,8,8,8" Padding="8" Grid.Column="1" Grid.Row="3" Content="作成" IsDefault="True" Click="okButton_Click" />
+            </Grid>
+            <Grid>
+                <Grid>
+                    <Grid.Resources>
+                        <Style TargetType="{x:Type TextBlock}">
+                            <Setter Property="Margin" Value="8,8,8,8" />
+                        </Style>
+                        <Style TargetType="{x:Type Button}">
+                            <Setter Property="Margin" Value="4,8,4,8" />
+                        </Style>
+                        <Style TargetType="{x:Type TextBox}">
+                            <Setter Property="Margin" Value="4,8,4,8" />
+                        </Style>
+                        <Style TargetType="{x:Type StackPanel}">
+                            <Setter Property="Margin" Value="4,8,4,8" />
+                        </Style>
+                        <Style TargetType="{x:Type ComboBox}">
+                            <Setter Property="Margin" Value="4,8,4,8" />
+                        </Style>
+                    </Grid.Resources>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="0.3*" />
+                        <ColumnDefinition Width="1*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="1*" />
+                        <RowDefinition Height="3*" />
+                        <RowDefinition Height="1*" />
+                        <RowDefinition Height="1*" />
+                        <RowDefinition Height="1*" />
+                        <RowDefinition Height="1*" />
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="辞書名" VerticalAlignment="Top" Margin="8,8,8,0" />
+                    <TextBox x:Name="DictionaryTitle" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left"
+                             VerticalAlignment="Top" Padding="4" MaxLength="300" Margin="4,8,4,8" 
+                             TextChanged="DictionaryTitle_TextChanged" Width="500"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="説明" VerticalAlignment="Top" Margin="8,8,8,8" />
+                    <TextBox x:Name="Description" Grid.Row="1" Grid.Column="1" Padding="4" Height="120"
+                             AcceptsReturn="True" TextWrapping="Wrap"
+                             VerticalScrollBarVisibility="Visible" Margin="4,8,4,8" />
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="韻律スクリプトのパス" VerticalAlignment="Top" Margin="8,8,8,0" />
+                    <WrapPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1">
+                        <TextBox x:Name="ScansionScriptPath" Padding="4" Width="300" HorizontalAlignment="Stretch" />
+                        <Button Content="参照" Width="40" Padding="4" Click="Button_Click" />
+                    </WrapPanel>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="グループ名" VerticalAlignment="Top" Margin="8,8,8,0" />
+                    <DockPanel Grid.Row="3" Grid.Column="1">
+                        <ComboBox x:Name="GroupName" Grid.Column="1" HorizontalAlignment="Left" Grid.Row="3"
+                                  VerticalAlignment="Top" Width="300" Margin="4,8,4,8" SelectionChanged="GroupName_SelectionChanged"/>
+                        <TextBox x:Name="NewGroupName" Visibility="Hidden" />
+                    </DockPanel>
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="パス" VerticalAlignment="Top" />
+                    <TextBox x:Name="DictionaryPath" Grid.Row="4" Grid.Column="1"
+                             VerticalAlignment="Top" Padding="4" Width="500" HorizontalAlignment="Left" />
+
+                    <StackPanel Grid.Row="5" Grid.Column="1" Orientation="Horizontal" Margin="4,8,4,8">
+                        <CheckBox x:Name="EnableHistory" Content="履歴の有効化" IsChecked="True" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </DockPanel>
+    </Grid>
+</Window>
