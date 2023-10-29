@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Sqlite;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Text.RegularExpressions;
+using DocumentFormat.OpenXml.Packaging;
 
 namespace FistirDictionary
 {
@@ -80,7 +81,10 @@ namespace FistirDictionary
         {
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             RelationalDatabaseCreator rdc = (RelationalDatabaseCreator)db.Database.GetService<IDatabaseCreator>();
-            rdc.CreateTables();
+            if (!rdc.HasTables())
+            {
+                rdc.CreateTables();
+            }
             var metadata = new Dictionary<string, string>()
                 {
                     { "__Name", dicname },
@@ -205,7 +209,7 @@ namespace FistirDictionary
             db.SaveChanges();
         }
 
-        public static Word[] SearchWord(string dictionaryPath, SearchStatement[] statements)
+        public static Word[] SearchWord(string dictionaryPath, SearchStatement[] statements, bool ignoreCase)
         {
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             IQueryable<Word> dbQuery = db.Words;
@@ -219,18 +223,48 @@ namespace FistirDictionary
                         switch (statement.Target)
                         {
                             case SearchTarget.HeadwordTranslation:
-                                dbQuery = dbQuery.Where(
-                                    word => word.Headword == statement.Keyword
-                                    || word.Translation == statement.Keyword);
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(
+                                        word => word.Headword.ToLower() == statement.Keyword.ToLower()
+                                        || word.Translation.ToLower() == statement.Keyword.ToLower());
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(
+                                        word => word.Headword == statement.Keyword
+                                        || word.Translation == statement.Keyword);
+                                }
                                 break;
                             case SearchTarget.Headword:
-                                dbQuery = dbQuery.Where(word => word.Headword == statement.Keyword);
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word => word.Headword.ToLower() == statement.Keyword.ToLower());
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word => word.Headword == statement.Keyword);
+                                }
                                 break;
                             case SearchTarget.Translation:
-                                dbQuery = dbQuery.Where(word => word.Translation == statement.Keyword);
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word => word.Translation.ToLower() == statement.Keyword.ToLower());
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word => word.Translation == statement.Keyword);
+                                }
                                 break;
                             case SearchTarget.Example:
-                                dbQuery = dbQuery.Where(word => word.Example == statement.Keyword);
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word => word.Example.ToLower() == statement.Keyword.ToLower());
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word => word.Example == statement.Keyword);
+                                }
                                 break;
                         }
                         break;
@@ -238,21 +272,54 @@ namespace FistirDictionary
                         switch (statement.Target)
                         {
                             case SearchTarget.HeadwordTranslation:
-                                dbQuery = dbQuery.Where(word =>
-                                    (word.Headword != null && word.Headword.Contains(statement.Keyword))
-                                    || (word.Translation != null && word.Translation.Contains(statement.Keyword)));
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        (word.Headword != null && word.Headword.ToLower().Contains(statement.Keyword.ToLower()))
+                                        || (word.Translation != null && word.Translation.ToLower().Contains(statement.Keyword.ToLower())));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        (word.Headword != null && word.Headword.Contains(statement.Keyword))
+                                        || (word.Translation != null && word.Translation.Contains(statement.Keyword)));
+                                }
                                 break;
                             case SearchTarget.Headword:
-                                dbQuery = dbQuery.Where(word =>
-                                    word.Headword != null && word.Headword.Contains(statement.Keyword));
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Headword != null && word.Headword.ToLower().Contains(statement.Keyword.ToLower()));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Headword != null && word.Headword.Contains(statement.Keyword));
+                                }
                                 break;
                             case SearchTarget.Translation:
-                                dbQuery = dbQuery.Where(word =>
-                                    word.Translation != null && word.Translation.Contains(statement.Keyword));
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Translation != null && word.Translation.ToLower().Contains(statement.Keyword.ToLower()));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Translation != null && word.Translation.Contains(statement.Keyword));
+                                }
                                 break;
                             case SearchTarget.Example:
-                                dbQuery = dbQuery.Where(word =>
-                                    word.Example != null && word.Example == statement.Keyword);
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Example != null && word.Example.ToLower().Contains(statement.Keyword.ToLower()));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Example != null && word.Example.Contains(statement.Keyword));
+                                }
                                 break;
                         }
                         break;
@@ -260,21 +327,54 @@ namespace FistirDictionary
                         switch (statement.Target)
                         {
                             case SearchTarget.HeadwordTranslation:
-                                dbQuery = dbQuery.Where(word =>
-                                    (word.Headword != null && EF.Functions.Like(word.Headword, $"{statement.Keyword}%"))
-                                    || (word.Translation != null && EF.Functions.Like(word.Translation, $"{statement.Keyword}%")));
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        (word.Headword != null && EF.Functions.Like(word.Headword.ToLower(), $"{statement.Keyword.ToLower()}%"))
+                                        || (word.Translation != null && EF.Functions.Like(word.Translation.ToLower(), $"{statement.Keyword.ToLower()}%")));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        (word.Headword != null && EF.Functions.Like(word.Headword, $"{statement.Keyword}%"))
+                                        || (word.Translation != null && EF.Functions.Like(word.Translation, $"{statement.Keyword}%")));
+                                }
                                 break;
                             case SearchTarget.Headword:
-                                dbQuery = dbQuery.Where(word =>
-                                    word.Headword != null && EF.Functions.Like(word.Headword, $"{statement.Keyword}%"));
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Headword != null && EF.Functions.Like(word.Headword.ToLower(), $"{statement.Keyword.ToLower()}%"));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Headword != null && EF.Functions.Like(word.Headword, $"{statement.Keyword}%"));
+                                }
                                 break;
                             case SearchTarget.Translation:
-                                dbQuery = dbQuery.Where(word =>
-                                    word.Translation != null && EF.Functions.Like(word.Translation, $"{statement.Keyword}%"));
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Translation != null && EF.Functions.Like(word.Translation.ToLower(), $"{statement.Keyword.ToLower()}%"));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Translation != null && EF.Functions.Like(word.Translation, $"{statement.Keyword}%"));
+                                }
                                 break;
                             case SearchTarget.Example:
-                                dbQuery = dbQuery.Where(word =>
-                                    word.Example != null && EF.Functions.Like(word.Example, $"{statement.Keyword}%"));
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Example != null && EF.Functions.Like(word.Example.ToLower(), $"{statement.Keyword.ToLower()}%"));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Example != null && EF.Functions.Like(word.Example, $"{statement.Keyword}%"));
+                                }
                                 break;
                         }
                         break;
@@ -282,21 +382,55 @@ namespace FistirDictionary
                         switch (statement.Target)
                         {
                             case SearchTarget.HeadwordTranslation:
-                                dbQuery = dbQuery.Where(word =>
-                                    (word.Headword != null && EF.Functions.Like(word.Headword, $"%{statement.Keyword}"))
-                                    || (word.Translation != null && EF.Functions.Like(word.Translation, $"%{statement.Keyword}")));
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        (word.Headword != null && EF.Functions.Like(word.Headword.ToLower(), $"%{statement.Keyword.ToLower()}"))
+                                        || (word.Translation != null && EF.Functions.Like(word.Translation.ToLower(), $"%{statement.Keyword.ToLower()}")));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        (word.Headword != null && EF.Functions.Like(word.Headword, $"%{statement.Keyword}"))
+                                        || (word.Translation != null && EF.Functions.Like(word.Translation, $"%{statement.Keyword}")));
+                                }
                                 break;
                             case SearchTarget.Headword:
-                                dbQuery = dbQuery.Where(word =>
-                                    word.Headword != null && EF.Functions.Like(word.Headword, $"%{statement.Keyword}"));
+                                if (ignoreCase)
+                                {
+
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Headword != null && EF.Functions.Like(word.Headword.ToLower(), $"%{statement.Keyword.ToLower()}"));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Headword != null && EF.Functions.Like(word.Headword, $"%{statement.Keyword}"));
+                                }
                                 break;
                             case SearchTarget.Translation:
-                                dbQuery = dbQuery.Where(word =>
-                                    word.Translation != null && EF.Functions.Like(word.Translation, $"%{statement.Keyword}"));
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Translation != null && EF.Functions.Like(word.Translation.ToLower(), $"%{statement.Keyword.ToLower()}"));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Translation != null && EF.Functions.Like(word.Translation, $"%{statement.Keyword}"));
+                                }
                                 break;
                             case SearchTarget.Example:
-                                dbQuery = dbQuery.Where(word =>
-                                    word.Example != null && EF.Functions.Like(word.Example, $"%{statement.Keyword}"));
+                                if (ignoreCase)
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Example != null && EF.Functions.Like(word.Example.ToLower(), $"%{statement.Keyword.ToLower()}"));
+                                }
+                                else
+                                {
+                                    dbQuery = dbQuery.Where(word =>
+                                        word.Example != null && EF.Functions.Like(word.Example, $"%{statement.Keyword}"));
+                                }
                                 break;
                         }
                         break;
@@ -346,6 +480,13 @@ namespace FistirDictionary
         {
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             var result = db.WordHistories.Where(wh => wh.WordID == wordID).ToList();
+            return result;
+        }
+
+        public static int GetWordCount(string dictionaryPath)
+        {
+            using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
+            var result = db.Words.Where(word => word.Headword != null && !word.Headword.StartsWith("__")).Count();
             return result;
         }
     }

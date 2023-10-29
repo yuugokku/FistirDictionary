@@ -21,7 +21,7 @@ namespace FistirDictionary
     /// </summary>
     public partial class AddExistingDictionaryDialog : Window
     {
-        public AddExistingDictionaryDialog()
+        public AddExistingDictionaryDialog(int defaultDictionaryGroup = 0)
         {
             InitializeComponent();
 
@@ -40,7 +40,7 @@ namespace FistirDictionary
             var groups = settings.DictionaryGroups != null ? settings.DictionaryGroups.Select(gr => gr.GroupName).ToList() : new List<string>();
             groups.Add("[新規作成]");
             GroupName.ItemsSource = groups;
-            GroupName.SelectedIndex = 0;
+            GroupName.SelectedIndex = defaultDictionaryGroup;
         }
 
         private void GroupName_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -105,8 +105,8 @@ namespace FistirDictionary
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.FileName = "";
-            dialog.DefaultExt = ".fdic.xlsx";
-            dialog.Filter = "FDIC辞書ファイル (*.fdic.xlsx)|*.fdic.xlsx";
+            dialog.DefaultExt = ".fdic";
+            dialog.Filter = "FDIC辞書ファイル (*.fdic)|*.fdic";
 
             bool? result = dialog.ShowDialog();
             if (result == true)

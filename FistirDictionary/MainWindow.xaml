@@ -29,6 +29,8 @@
                 <DockPanel DockPanel.Dock="Left" LastChildFill="True">
                     <WrapPanel DockPanel.Dock="Top">
                         <Button x:Name="AddWordButton" Content="単語を登録" Padding="4,4,4,4" Margin="2,2,2,2" Click="AddWordButton_Click" />
+                        <CheckBox x:Name="IgnoreCase" Margin="4" Content="大文字と小文字を無視する" IsChecked="True"
+                                  VerticalAlignment="Center" Checked="IgnoreCase_Checked" Unchecked="IgnoreCase_Unchecked" />
                     </WrapPanel>
                     <ScrollViewer DockPanel.Dock="Bottom">
                         <StackPanel Width="300" CanVerticallyScroll="True" ScrollViewer.CanContentScroll="True">

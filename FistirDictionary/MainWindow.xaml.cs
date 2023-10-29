@@ -55,6 +55,7 @@ namespace FistirDictionary
         public MainWindow()
         {
             InitializeComponent();
+            DictionaryPaths = new Dictionary<string, string>();
             var settingsPath = ConfigurationManager.AppSettings.Get("defaultSettingPath");
             settings = SettingSerializer.LoadSettings(settingsPath);
             var groups = settings.DictionaryGroups != null ?
@@ -92,7 +93,7 @@ namespace FistirDictionary
                 IEnumerable<WordView> words = new List<WordView>();
                 foreach (var dpPair in DictionaryPaths)
                 {
-                    words = words.Concat(FDictionary.SearchWord(dpPair.Value, searchStatements.ToArray())
+                    words = words.Concat(FDictionary.SearchWord(dpPair.Value, searchStatements.ToArray(), IgnoreCase.IsChecked == true ? true : false)
                         .Select(word => new WordView {
                             dictionaryName = dpPair.Key,
                             dictionaryPath = dpPair.Value,
@@ -156,6 +157,10 @@ namespace FistirDictionary
         /// <param name="e"></param>
         private void GroupName_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (GroupName.SelectedValue == null || (string)GroupName.SelectedValue == "") {
+                DictionaryPaths.Clear();
+                return;
+            }
             if ((string)GroupName.SelectedValue == "")
             {
                 return;
@@ -328,14 +333,32 @@ namespace FistirDictionary
             this.Close();
         }
 
+        /// <summary>
+        ///   「辞書の設定」
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void MenuItem_Click_4(object sender, RoutedEventArgs e)
         {
             var dialog = new SettingWindow();
             var result = dialog.ShowDialog();
-            if (result == true)
-            {
+            var settingsPath = ConfigurationManager.AppSettings.Get("defaultSettingPath");
+            settings = SettingSerializer.LoadSettings(settingsPath);
+            var groups = settings.DictionaryGroups != null ?
+                settings.DictionaryGroups.Select(gr => gr.GroupName).ToList() :
+                new List<string?>();
+            GroupName.ItemsSource = groups;
+            GroupName.SelectedIndex = settings.DefaultGroupIndex != null ? (int)settings.DefaultGroupIndex : 0;
+        }
 
-            }
+        private void IgnoreCase_Checked(object sender, RoutedEventArgs e)
+        {
+            SearchItem_SearchChanged(sender, e);
+        }
+
+        private void IgnoreCase_Unchecked(object sender, RoutedEventArgs e)
+        {
+            SearchItem_SearchChanged(sender, e);
         }
     }
 }

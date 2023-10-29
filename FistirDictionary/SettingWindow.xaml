@@ -12,11 +12,15 @@
             <ColumnDefinition Width="1*"/>
         </Grid.ColumnDefinitions>
         <DockPanel LastChildFill="True" Grid.ColumnSpan="2">
-            <WrapPanel DockPanel.Dock="Top">
-                <Button x:Name="NewDictionaryGroup" Margin="4" Content="新規グループ作成" Padding="4" />
-            </WrapPanel>
+            <DockPanel DockPanel.Dock="Top" LastChildFill="True">
+                <Button DockPanel.Dock="Left" x:Name="NewDictionaryGroup" Margin="4" Content="新規グループ作成"
+                        Padding="4" Click="NewDictionaryGroup_Click" />
+                <WrapPanel HorizontalAlignment="Right" DockPanel.Dock="Right">
+                    <Button x:Name="DeleteDictionaryGroup" Margin="4" Content="選択中の辞書グループを削除" Padding="4" Background="#FFFFD5D5" Click="DeleteDictionaryGroup_Click" />
+                </WrapPanel>
+            </DockPanel>
             <DockPanel DockPanel.Dock="Left" Width="300" LastChildFill="True">
-                <ListBox DockPanel.Dock="Bottom" x:Name="DictionaryGroupList">
+                <ListBox DockPanel.Dock="Bottom" x:Name="DictionaryGroupList" SelectionChanged="DictionaryGroupList_SelectionChanged">
                 </ListBox>
             </DockPanel>
             <DockPanel LastChildFill="True" DockPanel.Dock="Right">
@@ -44,19 +48,37 @@
                     </Grid.RowDefinitions>
                     <TextBlock VerticalAlignment="Center" Grid.Row="0" Grid.Column="0" Text="グループ名" />
                     <DockPanel Grid.Column="1" Grid.Row="0" LastChildFill="True">
-                        <Button DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center" Grid.ColumnSpan="2"
-                                Grid.Row="1" Content="変更" Margin="4" Padding="4" />
-                        <TextBox DockPanel.Dock="Left" x:Name="GroupName" Grid.Row="0" Grid.Column="1" IsEnabled="False"
-                                 VerticalAlignment="Center" Padding="4" MaxLength="300" Margin="4,8,4,8" />
+                        <Button x:Name="ChangeGroupName" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center" Grid.ColumnSpan="2"
+                                Grid.Row="1" Content="変更" Margin="4" Padding="4" Click="Button_Click" />
+                        <DockPanel>
+                            <Button x:Name="CancelChangeGroupName" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center" Grid.ColumnSpan="2"
+                                    Grid.Row="1" Content="取消" Margin="4" Padding="4" Visibility="Hidden" Click="CancelChangeGroupName_Click" />
+                            <TextBox DockPanel.Dock="Left" x:Name="GroupName" Grid.Row="0" Grid.Column="1" IsEnabled="False"
+                                     VerticalAlignment="Center" Padding="4" MaxLength="300" Margin="4,8,4,8" />
+                        </DockPanel>
                     </DockPanel>
                 </Grid>
                 <DockPanel>
-                    <TextBlock DockPanel.Dock="Top" Text="辞書一覧" />
-                    <DataGrid DockPanel.Dock="Bottom" IsReadOnly="True">
+                    <DockPanel DockPanel.Dock="Top">
+                        <WrapPanel DockPanel.Dock="Right">
+                            <Button Margin="4" Padding="4" Content="新規辞書を追加" x:Name="AddDictionary" Click="AddDictionary_Click" />
+                            <Button Margin="4" Padding="4" Content="既存辞書を追加" x:Name="AddExistingDictionary" Click="AddExistingDictionary_Click" />
+                        </WrapPanel>
+                        <TextBlock VerticalAlignment="Center" Text="辞書一覧" />
+                    </DockPanel>
+                    <DataGrid x:Name="DictionaryList" DockPanel.Dock="Bottom" IsReadOnly="True" AutoGenerateColumns="False">
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="ファイルパス" Binding="{Binding Path}" />
+                            <DataGridTemplateColumn>
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Button Content="編集" Tag="{Binding}" Click="EditDictinoary_Click" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
                             <DataGridTextColumn Header="辞書名" Binding="{Binding Name}"/>
                             <DataGridTextColumn Header="説明" Binding="{Binding Description}"/>
+                            <DataGridTextColumn Header="登録単語数" Binding="{Binding WordCount}"/>
+                            <DataGridTextColumn Header="ファイルパス" Binding="{Binding Path}" />
                             <DataGridTextColumn Header="韻律スクリプト" Binding="{Binding ScansionScript}"/>
                         </DataGrid.Columns>
                     </DataGrid>

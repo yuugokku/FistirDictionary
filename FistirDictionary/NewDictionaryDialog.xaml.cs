@@ -21,7 +21,7 @@ namespace FistirDictionary
     /// </summary>
     public partial class NewDictionaryDialog : Window
     {
-        public NewDictionaryDialog()
+        public NewDictionaryDialog(int defaultDictionaryGroup = 0)
         {
             InitializeComponent();
 
@@ -40,7 +40,7 @@ namespace FistirDictionary
             var groups = settings.DictionaryGroups != null ? settings.DictionaryGroups.Select(gr => gr.GroupName).ToList() : new List<string>();
             groups.Add("[新規作成]");
             GroupName.ItemsSource = groups;
-            GroupName.SelectedIndex = 0;
+            GroupName.SelectedIndex = defaultDictionaryGroup;
 
             DictionaryPath.Text = System.IO.Path.Combine(
                 System.Environment.GetFolderPath(Environment.SpecialFolder.Personal),
@@ -108,6 +108,16 @@ namespace FistirDictionary
             }
             else
             {
+                FDictionary.CreateEmptyDictionary(
+                    DictionaryPath.Text,
+                    DictionaryTitle.Text,
+                    Description.Text,
+                    ScansionScriptPath.Text,
+                    "",
+                    EnableHistory.IsChecked == true && EnableHistory.IsChecked != null,
+                    settings.Username != null && settings.Email != null ?
+                        $"{settings.Username} <{settings.Email}>" :
+                        "");
                 settings.DictionaryGroups?
                     .First(st => st.GroupName == GroupName.Text)?
                     .Dictionaries?.Add(DictionaryPath.Text);
