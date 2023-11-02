@@ -47,10 +47,23 @@ namespace FistirDictionary
     /// </summary>
     internal class FDictionary
     {
+        private class WordRhyme
+        {
+            public int WordID { get; set; }
+            public string? Headword { get; set; }
+            public string? Translation { get; set; }
+            public string? Example { get; set; }
+            public DateTime? UpdatedAt { get; set; }
+
+            public string? ScansionScript { get; set; }
+            public string? Scanned { get; set; }
+        }
+
         public static string GetSqliteConnectionString(string filepath)
         {
             return $"Data Source={filepath};";
         }
+
         public static ICollection<Word> GetDictionaryMetadata(string dictionaryPath)
         {
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
@@ -212,7 +225,23 @@ namespace FistirDictionary
         public static Word[] SearchWord(string dictionaryPath, SearchStatement[] statements, bool ignoreCase)
         {
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
-            IQueryable<Word> dbQuery = db.Words;
+            var scansionScriptPath = db.Words.First(word => word.Headword == "__ScansionScript").Translation;
+            var dictionaryName = db.Words.First(word => word.Headword == "__Name").Translation;
+            IQueryable<WordRhyme> dbQuery =
+                from word in db.Words
+                join rhyme in db.Rhymes
+                on word.Headword equals rhyme.Headword into wordRhyme
+                from wr in wordRhyme.DefaultIfEmpty()
+                select new WordRhyme
+                {
+                    WordID = word.WordID,
+                    Headword = word.Headword,
+                    Translation = word.Translation,
+                    Example = word.Example,
+                    UpdatedAt = word.UpdatedAt,
+                    Scanned = wr.Scanned,
+                    ScansionScript = wr.ScansionScript,
+                };
             foreach (var statement in statements)
             {
                 if (statement == null) continue;
@@ -440,6 +469,7 @@ namespace FistirDictionary
             }
             dbQuery = dbQuery.Where(word => word.Headword != null && !word.Headword.StartsWith("__"));
             var query = dbQuery.ToList().AsQueryable();
+            FLua flua = null;
             foreach (var statement in statements)
             {
                 if (statement == null) continue;
@@ -469,11 +499,91 @@ namespace FistirDictionary
                             break;
                     }
                 }
-                else if(statement.Target == SearchTarget.Rhyme)
+                else if(statement.Target == SearchTarget.Rhyme && scansionScriptPath != null && scansionScriptPath.Length > 0)
                 {
+                    flua ??= FLua.LoadScansionScript(scansionScriptPath);
+                    switch (statement.Method)
+                    {
+                        case SearchMethod.Is:
+                            query = query.Where(word =>
+                                (
+                                    word.Scanned == null ? 
+                                    flua.Scan(word.Headword, word.Translation, word.Example, dictionaryName) :
+                                    word.Scanned
+                                ) == statement.Keyword);
+                            break;
+                        case SearchMethod.Includes:
+                            query = query.Where(word =>
+                                (
+                                    word.Scanned == null ?
+                                    flua.Scan(word.Headword,word.Translation, word.Example, dictionaryName) :
+                                    word.Scanned
+                                ).Contains(statement.Keyword));
+                            break;
+                        case SearchMethod.StartsWith:
+                            query = query.Where(word =>
+                                (
+                                    word.Scanned == null ?
+                                    flua.Scan(word.Headword, word.Translation, word.Example, dictionaryName) :
+                                    word.Scanned
+                                ).StartsWith(statement.Keyword));
+                            break;
+                        case SearchMethod.EndsWith:
+                            query = query.Where(word =>
+                                (
+                                    word.Scanned == null ?
+                                    flua.Scan(word.Headword, word.Translation, word.Example, dictionaryName) :
+                                    word.Scanned
+                                ).EndsWith(statement.Keyword));
+                            break;
+                        case SearchMethod.RegexMatch:
+                            query = query.Where(word => Regex.IsMatch(
+                                word.Scanned == null ?
+                                flua.Scan(word.Headword, word.Translation, word.Example, dictionaryName) :
+                                word.Scanned, statement.Keyword));
+                            break;
+                    }
                 }
             }
-            return query.ToArray();
+            if (scansionScriptPath != null && scansionScriptPath.Length > 0)
+            {
+                foreach (var wr in from word in db.Words
+                    join rhyme in db.Rhymes
+                    on word.Headword equals rhyme.Headword into wordRhyme
+                    from wr in wordRhyme.DefaultIfEmpty()
+                    select new WordRhyme
+                    {
+                        WordID = word.WordID,
+                        Headword = word.Headword,
+                        Translation = word.Translation,
+                        Example = word.Example,
+                        UpdatedAt = word.UpdatedAt,
+                        Scanned = wr.Scanned,
+                        ScansionScript = wr.ScansionScript,
+                    })
+                {
+                    if (wr.Scanned == null)
+                    {
+                        db.Rhymes.Add(new Rhyme
+                        {
+                            Headword = wr.Headword,
+                            Translation = wr.Translation,
+                            Example = wr.Example,
+                            Scanned = flua.Scan(wr.Headword, wr.Translation, wr.Example, dictionaryName),
+                            DictionaryName = dictionaryName,
+                            ScansionScript = scansionScriptPath,
+                        });
+                    }
+                }
+                db.SaveChanges();
+            }
+            return query.Select(wordRhyme => new Word {
+                WordID = wordRhyme.WordID,
+                Headword = wordRhyme.Headword,
+                Translation = wordRhyme.Translation,
+                Example = wordRhyme.Example,
+                UpdatedAt = wordRhyme.UpdatedAt,
+            }).ToArray();
         }
 
         public static List<WordHistory> GetWordHistory(string dictionaryPath, int wordID)
@@ -494,8 +604,11 @@ namespace FistirDictionary
     internal class DictionaryContext : DbContext
     {
         private readonly string _connectionString;
+
         public DbSet<Word> Words { get; set; }
         public DbSet<WordHistory> WordHistories { get; set; }
+        public DbSet<Rhyme> Rhymes { get; set; }
+        public DbSet<Derivation> Derivation { get; set; }
 
         public DictionaryContext(string connectionString)
         {
@@ -532,7 +645,7 @@ namespace FistirDictionary
         public string? Headword { get; set; }
         public string? Translation { get; set; }
         public string? Example { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
         public ICollection<WordHistory>? WordHistories { get; set; }
     }
 
@@ -544,7 +657,29 @@ namespace FistirDictionary
         public string? Headword { get; set; }
         public string? Translation { get; set; }
         public string? Example { get; set; }
-        public DateTime UpdatedAt { get; set; }
+        public DateTime? UpdatedAt { get; set; }
         public Word? WordLatest { get; set; }
+    }
+
+    internal class Rhyme
+    {
+        [Key]
+        public int RhymeID { get; set; }
+        public string? DictionaryName { get; set; }
+        public string? ScansionScript { get; set; }
+        public string? Headword { get; set; }
+        public string? Translation { get; set; }
+        public string? Example { get; set; }
+        public string? Scanned { get; set; }
+    }
+
+    internal class Derivation
+    {
+        [Key]
+        public string DerivationID { get; set; }
+        public string? DictionaryName { get; set; }
+        public string? DerivationScript { get; set; }
+        public string? DerivationForm { get; set; }
+        public string? Headword { get; set; }
     }
 }

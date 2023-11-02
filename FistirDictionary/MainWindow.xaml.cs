@@ -91,14 +91,21 @@ namespace FistirDictionary
                 }
                 if (searchStatements.Count == 0) return;
                 IEnumerable<WordView> words = new List<WordView>();
-                foreach (var dpPair in DictionaryPaths)
+                try
                 {
-                    words = words.Concat(FDictionary.SearchWord(dpPair.Value, searchStatements.ToArray(), IgnoreCase.IsChecked == true ? true : false)
-                        .Select(word => new WordView {
-                            dictionaryName = dpPair.Key,
-                            dictionaryPath = dpPair.Value,
-                            _Word = word,
-                        }));
+                    foreach (var dpPair in DictionaryPaths)
+                    {
+                        words = words.Concat(FDictionary.SearchWord(dpPair.Value, searchStatements.ToArray(), IgnoreCase.IsChecked == true ? true : false)
+                            .Select(word => new WordView {
+                                dictionaryName = dpPair.Key,
+                                dictionaryPath = dpPair.Value,
+                                _Word = word,
+                            }));
+                    }
+                }
+                catch (System.Text.RegularExpressions.RegexParseException ex)
+                {
+                    return;
                 }
                 var mainQueryItem = searchStatements.FirstOrDefault(
                     st =>
@@ -107,7 +114,7 @@ namespace FistirDictionary
                         st.Target == SearchTarget.Translation);
                 if (mainQueryItem != null)
                 {
-                    switch (searchStatements[0].Target)
+                    switch (mainQueryItem.Target)
                     {
                         case SearchTarget.Headword:
                         case SearchTarget.HeadwordTranslation:

@@ -78,8 +78,8 @@ namespace FistirDictionary
         {
             var dialog = new Microsoft.Win32.OpenFileDialog();
             dialog.FileName = "";
-            dialog.DefaultExt = ".lua";
-            dialog.Filter = "Luaスクリプト (.lua)|.lua";
+            dialog.DefaultExt = "*.lua";
+            dialog.Filter = "Luaスクリプト (*.lua)|*.lua";
 
             bool? result = dialog.ShowDialog();
             if (result == true)
