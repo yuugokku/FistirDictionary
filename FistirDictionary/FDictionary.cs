@@ -227,10 +227,15 @@ namespace FistirDictionary
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             var scansionScriptPath = db.Words.First(word => word.Headword == "__ScansionScript").Translation;
             var dictionaryName = db.Words.First(word => word.Headword == "__Name").Translation;
+            string scriptHash = "";
+            if (scansionScriptPath != null && scansionScriptPath.Length > 0)
+            {
+                scriptHash = FLua.GetScriptHash(scansionScriptPath);
+            }
             IQueryable<WordRhyme> dbQuery =
                 from word in db.Words
                 join rhyme in db.Rhymes
-                on word.Headword equals rhyme.Headword into wordRhyme
+                on new { word.Headword, Script = scriptHash } equals new { rhyme.Headword, Script = rhyme.ScansionScript } into wordRhyme
                 from wr in wordRhyme.DefaultIfEmpty()
                 select new WordRhyme
                 {
@@ -499,7 +504,7 @@ namespace FistirDictionary
                             break;
                     }
                 }
-                else if(statement.Target == SearchTarget.Rhyme && scansionScriptPath != null && scansionScriptPath.Length > 0)
+                else if (statement.Target == SearchTarget.Rhyme && scansionScriptPath != null && scansionScriptPath.Length > 0)
                 {
                     flua ??= FLua.LoadScansionScript(scansionScriptPath);
                     switch (statement.Method)
@@ -545,11 +550,14 @@ namespace FistirDictionary
                     }
                 }
             }
-            if (scansionScriptPath != null && scansionScriptPath.Length > 0)
+            if (scansionScriptPath != null &&
+                scansionScriptPath.Length > 0 &&
+                flua != null &&
+                flua.HasScanned())
             {
                 foreach (var wr in from word in db.Words
                     join rhyme in db.Rhymes
-                    on word.Headword equals rhyme.Headword into wordRhyme
+                    on new { word.Headword, Script = scriptHash } equals new { rhyme.Headword, Script = rhyme.ScansionScript } into wordRhyme
                     from wr in wordRhyme.DefaultIfEmpty()
                     select new WordRhyme
                     {
@@ -571,7 +579,7 @@ namespace FistirDictionary
                             Example = wr.Example,
                             Scanned = flua.Scan(wr.Headword, wr.Translation, wr.Example, dictionaryName),
                             DictionaryName = dictionaryName,
-                            ScansionScript = scansionScriptPath,
+                            ScansionScript = scriptHash,
                         });
                     }
                 }
