@@ -76,7 +76,7 @@ namespace FistirDictionary
         private DebounceDispatcher debounceTimer = new DebounceDispatcher();
         private void SearchItem_SearchChanged(object sender, EventArgs e)
         {
-            debounceTimer.Debounce(100, (p) =>
+            debounceTimer.Debounce(500, (p) =>
             {
                 var searchStatements = new List<SearchStatement>();
                 foreach (SearchItem searchItem in SearchItemStack.Children)

@@ -550,48 +550,56 @@ namespace FistirDictionary
                     }
                 }
             }
-            if (scansionScriptPath != null &&
-                scansionScriptPath.Length > 0 &&
-                flua != null &&
-                flua.HasScanned())
-            {
-                foreach (var wr in from word in db.Words
-                    join rhyme in db.Rhymes
-                    on new { word.Headword, Script = scriptHash } equals new { rhyme.Headword, Script = rhyme.ScansionScript } into wordRhyme
-                    from wr in wordRhyme.DefaultIfEmpty()
-                    select new WordRhyme
-                    {
-                        WordID = word.WordID,
-                        Headword = word.Headword,
-                        Translation = word.Translation,
-                        Example = word.Example,
-                        UpdatedAt = word.UpdatedAt,
-                        Scanned = wr.Scanned,
-                        ScansionScript = wr.ScansionScript,
-                    })
-                {
-                    if (wr.Scanned == null)
-                    {
-                        db.Rhymes.Add(new Rhyme
-                        {
-                            Headword = wr.Headword,
-                            Translation = wr.Translation,
-                            Example = wr.Example,
-                            Scanned = flua.Scan(wr.Headword, wr.Translation, wr.Example, dictionaryName),
-                            DictionaryName = dictionaryName,
-                            ScansionScript = scriptHash,
-                        });
-                    }
-                }
-                db.SaveChanges();
-            }
-            return query.Select(wordRhyme => new Word {
+            var result = query.Select(wordRhyme => new Word {
                 WordID = wordRhyme.WordID,
                 Headword = wordRhyme.Headword,
                 Translation = wordRhyme.Translation,
                 Example = wordRhyme.Example,
                 UpdatedAt = wordRhyme.UpdatedAt,
             }).ToArray();
+
+            if (scansionScriptPath != null &&
+                scansionScriptPath.Length > 0 &&
+                flua != null &&
+                flua.HasScanned())
+            {
+                Task.Run(() =>
+                {
+                    using var _db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
+                    var f = FLua.LoadScansionScript(scansionScriptPath);
+                    foreach (var wr in from word in _db.Words
+                        join rhyme in _db.Rhymes
+                        on new { word.Headword, Script = scriptHash } equals new { rhyme.Headword, Script = rhyme.ScansionScript } into wordRhyme
+                        from wr in wordRhyme.DefaultIfEmpty()
+                        select new WordRhyme
+                        { 
+                            WordID = word.WordID,
+                            Headword = word.Headword,
+                            Translation = word.Translation,
+                            Example = word.Example,
+                            UpdatedAt = word.UpdatedAt,
+                            Scanned = wr.Scanned,
+                            ScansionScript = wr.ScansionScript,
+                        })
+                    {
+                        if (wr.Scanned == null)
+                        {
+                            _db.Rhymes.Add(new Rhyme
+                            {
+                                Headword = wr.Headword,
+                                Translation = wr.Translation,
+                                Example = wr.Example,
+                                Scanned = f.Scan(wr.Headword, wr.Translation, wr.Example, dictionaryName),
+                                DictionaryName = dictionaryName,
+                                ScansionScript = scriptHash,
+                            });
+                        }
+                    }
+                    _db.SaveChanges();
+                });
+            }
+
+            return result;
         }
 
         public static List<WordHistory> GetWordHistory(string dictionaryPath, int wordID)
