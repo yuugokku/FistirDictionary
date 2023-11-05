@@ -47,6 +47,33 @@ namespace FistirDictionary
     /// </summary>
     internal class FDictionary
     {
+        public class DictionaryNotFoundExcepction : Exception
+        {
+            public string? Message { get; set; }
+            public DictionaryNotFoundExcepction(string message) : base(message)
+            {
+                Message = message;
+            }
+        }
+
+        public class DictionaryException : Exception
+        {
+            public string? Message { get; set; }
+            public DictionaryException(string message) : base(message)
+            {
+                Message = message;
+            }
+        }
+
+        public class DictionaryBrokenException : Exception
+        {
+            public string? Message { get; set; }
+            public DictionaryBrokenException(string message) : base(message)
+            {
+                Message = message;
+            }
+        }
+
         private class WordRhyme
         {
             public int WordID { get; set; }
@@ -66,11 +93,15 @@ namespace FistirDictionary
 
         public static ICollection<Word> GetDictionaryMetadata(string dictionaryPath)
         {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             return (from word in db.Words
-                   where word.Headword != null && word.Headword.StartsWith("__")
-                   select word)
-                   .ToArray();
+                where word.Headword != null && word.Headword.StartsWith("__")
+                select word)
+                .ToArray();
         }
 
         /// <summary>
@@ -92,6 +123,10 @@ namespace FistirDictionary
             bool enableWordHistory,
             string authorInfo)
         {
+            if (System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryException($"{dictionaryPath} がすでに存在します。");
+            }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             RelationalDatabaseCreator rdc = (RelationalDatabaseCreator)db.Database.GetService<IDatabaseCreator>();
             if (!rdc.HasTables())
@@ -129,6 +164,10 @@ namespace FistirDictionary
             string translation,
             string example)
         {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             var w = new Word
             {
@@ -144,6 +183,10 @@ namespace FistirDictionary
 
         public static int AddWord(string dictionaryPath, Word[] wordsToAdd)
         {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             db.Words.AddRange(wordsToAdd);
             return db.SaveChanges(true);
@@ -156,6 +199,10 @@ namespace FistirDictionary
             string translation,
             string example)
         {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             var w = (from word in db.Words
                      where word.WordID == wordID
@@ -207,6 +254,10 @@ namespace FistirDictionary
 
         public static Word GetWord(string dictionaryPath, int wordID)
         {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             return (from word in db.Words
                     where word.WordID == wordID
@@ -216,6 +267,10 @@ namespace FistirDictionary
 
         public static void DeleteWord(string dictionaryPath, int wordID)
         {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             var w = db.Words.Single(word => word.WordID == wordID);
             db.Words.Remove(w);
@@ -224,6 +279,10 @@ namespace FistirDictionary
 
         public static Word[] SearchWord(string dictionaryPath, SearchStatement[] statements, bool ignoreCase)
         {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             var scansionScriptPath = db.Words.First(word => word.Headword == "__ScansionScript").Translation;
             var dictionaryName = db.Words.First(word => word.Headword == "__Name").Translation;
@@ -432,7 +491,6 @@ namespace FistirDictionary
                             case SearchTarget.Headword:
                                 if (ignoreCase)
                                 {
-
                                     dbQuery = dbQuery.Where(word =>
                                         word.Headword != null && EF.Functions.Like(word.Headword.ToLower(), $"%{statement.Keyword.ToLower()}"));
                                 }
@@ -604,6 +662,10 @@ namespace FistirDictionary
 
         public static List<WordHistory> GetWordHistory(string dictionaryPath, int wordID)
         {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             var result = db.WordHistories.Where(wh => wh.WordID == wordID).ToList();
             return result;
@@ -611,6 +673,10 @@ namespace FistirDictionary
 
         public static int GetWordCount(string dictionaryPath)
         {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             var result = db.Words.Where(word => word.Headword != null && !word.Headword.StartsWith("__")).Count();
             return result;

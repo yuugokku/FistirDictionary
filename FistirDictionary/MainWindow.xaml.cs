@@ -176,19 +176,35 @@ namespace FistirDictionary
             var dictionariesInGroup = settings.DictionaryGroups?
                 .First(dg => dg.GroupName == (string)GroupName.SelectedValue)
                 .Dictionaries;
-            var metadataArray = dictionariesInGroup?
-                .Select(path => FDictionary.GetDictionaryMetadata(path));
-            foreach (var d in metadataArray
-                .Select(words => (from w in words
-                                 where w.Headword == "__Name"
-                                 select w.Translation).First())
-                .Zip(dictionariesInGroup)
-                .Select(pair => new {Name = pair.First, Path = pair.Second})) 
+            IEnumerable<ICollection<Word>> metadataArray = null;
+            try
             {
-                if (d.Name != null)
+                metadataArray = dictionariesInGroup?
+                    .Select(path => FDictionary.GetDictionaryMetadata(path));
+                foreach (var d in metadataArray
+                    .Select(words => (from w in words
+                                     where w.Headword == "__Name"
+                                     select w.Translation).First())
+                    .Zip(dictionariesInGroup)
+                    .Select(pair => new {Name = pair.First, Path = pair.Second})) 
                 {
-                    DictionaryPaths.Add(d.Name, d.Path);
+                    if (d.Name != null)
+                    {
+                        DictionaryPaths.Add(d.Name, d.Path);
+                    }
                 }
+            }
+            catch (FDictionary.DictionaryNotFoundExcepction ex)
+            {
+                MessageBox.Show($"辞書グループ {GroupName.SelectedValue} を選択できませんでした: {ex.Message}");
+                GroupName.SelectedValue = null;
+                return;
+            }
+            catch (FDictionary.DictionaryBrokenException ex)
+            {
+                MessageBox.Show($"辞書グループ {GroupName.SelectedValue} を選択できませんでした: {ex.Message}");
+                GroupName.SelectedValue = null;
+                return;
             }
             if (settings.DefaultGroupIndex == GroupName.SelectedIndex)
             {
