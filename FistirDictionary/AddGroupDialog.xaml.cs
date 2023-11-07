@@ -38,7 +38,7 @@ namespace FistirDictionary
                 new DictionaryGroup {
                     GroupName = NewGroupName.Text,
                     DefaultDictionaryIndex = null,
-                    Dictionaries = new List<string>() });
+                    DictionaryEntries = new List<DictionaryEntry>() });
             settings.Save(ConfigurationManager.AppSettings.Get("defaultSettingPath"));
             this.DialogResult = true;
             this.Close();

@@ -137,8 +137,6 @@ namespace FistirDictionary
                 {
                     { "__Name", dicname },
                     { "__Description", description },
-                    { "__ScansionScript", scansionScript },
-                    { "__DerivationScript", derivationScript },
                     { "__EnableHistory", enableWordHistory ? "true" : "false" },
                     { "__Author", authorInfo }
                 };
@@ -277,14 +275,13 @@ namespace FistirDictionary
             db.SaveChanges();
         }
 
-        public static Word[] SearchWord(string dictionaryPath, SearchStatement[] statements, bool ignoreCase)
+        public static Word[] SearchWord(string dictionaryPath, SearchStatement[] statements, bool ignoreCase, string scansionScriptPath)
         {
             if (!System.IO.File.Exists(dictionaryPath))
             {
                 throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
             }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
-            var scansionScriptPath = db.Words.First(word => word.Headword == "__ScansionScript").Translation;
             var dictionaryName = db.Words.First(word => word.Headword == "__Name").Translation;
             string scriptHash = "";
             if (scansionScriptPath != null && scansionScriptPath.Length > 0)

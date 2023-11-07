@@ -161,9 +161,12 @@ namespace FistirDictionary
                 settings.DictionaryGroups.Add(new DictionaryGroup
                 {
                     GroupName = NewGroupName.Text,
-                    Dictionaries = new List<string>
+                    DictionaryEntries = new List<DictionaryEntry>
                     {
-                        DictionaryPath.Text
+                        new DictionaryEntry {
+                            DictionaryPath = DictionaryPath.Text ,
+                            ScansionScript = ScansionScriptPath.Text 
+                        }
                     }
                 });
                 settings.Save(settingsPath);
@@ -172,7 +175,9 @@ namespace FistirDictionary
             {
                 settings.DictionaryGroups?
                     .First(st => st.GroupName == GroupName.Text)?
-                    .Dictionaries?.Add(DictionaryPath.Text);
+                    .DictionaryEntries?.Add(new DictionaryEntry {
+                        DictionaryPath = DictionaryPath.Text, ScansionScript = ScansionScriptPath.Text
+                    });
                 settings.Save(settingsPath);
             }
 

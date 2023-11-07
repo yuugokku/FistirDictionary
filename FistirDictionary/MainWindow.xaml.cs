@@ -50,12 +50,12 @@ namespace FistirDictionary
         ///   Key: 辞書の名前
         ///   Value: 辞書のパス
         /// </summary>
-        private Dictionary<string, string> DictionaryPaths { get; set; }
+        private Dictionary<string, DictionaryEntry> DictionaryPaths { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
-            DictionaryPaths = new Dictionary<string, string>();
+            DictionaryPaths = new Dictionary<string, DictionaryEntry>();
             var settingsPath = ConfigurationManager.AppSettings.Get("defaultSettingPath");
             settings = SettingSerializer.LoadSettings(settingsPath);
             var groups = settings.DictionaryGroups != null ?
@@ -95,10 +95,15 @@ namespace FistirDictionary
                 {
                     foreach (var dpPair in DictionaryPaths)
                     {
-                        words = words.Concat(FDictionary.SearchWord(dpPair.Value, searchStatements.ToArray(), IgnoreCase.IsChecked == true ? true : false)
+                        words = words.Concat(
+                            FDictionary.SearchWord(
+                                dpPair.Value.DictionaryPath,
+                                searchStatements.ToArray(),
+                                IgnoreCase.IsChecked == true ? true : false,
+                                dpPair.Value.ScansionScript)
                             .Select(word => new WordView {
                                 dictionaryName = dpPair.Key,
-                                dictionaryPath = dpPair.Value,
+                                dictionaryPath = dpPair.Value.DictionaryPath,
                                 _Word = word,
                             }));
                     }
@@ -120,12 +125,12 @@ namespace FistirDictionary
                         case SearchTarget.HeadwordTranslation:
                             words = words.OrderBy(
                                 word => LevenshteinDistance.Calculate(
-                                    word._Word.Headword, ((SearchItem)SearchItemStack.Children[0]).Keyword));
+                                    word._Word.Headword, mainQueryItem.Keyword));
                                 break;
                         case SearchTarget.Translation:
                             words = words.OrderBy(
                                 word => LevenshteinDistance.Calculate(
-                                    word._Word.Translation, ((SearchItem)SearchItemStack.Children[0]).Keyword));
+                                    word._Word.Translation, mainQueryItem.Keyword));
                             break;
                         case default(SearchTarget):
                             break;
@@ -172,25 +177,25 @@ namespace FistirDictionary
             {
                 return;
             }
-            DictionaryPaths = new Dictionary<string, string>();
+            DictionaryPaths = new Dictionary<string, DictionaryEntry>();
             var dictionariesInGroup = settings.DictionaryGroups?
                 .First(dg => dg.GroupName == (string)GroupName.SelectedValue)
-                .Dictionaries;
+                .DictionaryEntries;
             IEnumerable<ICollection<Word>> metadataArray = null;
             try
             {
                 metadataArray = dictionariesInGroup?
-                    .Select(path => FDictionary.GetDictionaryMetadata(path));
+                    .Select(entry => FDictionary.GetDictionaryMetadata(entry.DictionaryPath));
                 foreach (var d in metadataArray
                     .Select(words => (from w in words
                                      where w.Headword == "__Name"
                                      select w.Translation).First())
                     .Zip(dictionariesInGroup)
-                    .Select(pair => new {Name = pair.First, Path = pair.Second})) 
+                    .Select(pair => new {Name = pair.First, Entry = pair.Second})) 
                 {
                     if (d.Name != null)
                     {
-                        DictionaryPaths.Add(d.Name, d.Path);
+                        DictionaryPaths.Add(d.Name, d.Entry);
                     }
                 }
             }

@@ -22,22 +22,19 @@ namespace FistirDictionary
     /// </summary>
     public partial class AddWordDialog : Window
     {
-        /// <summary>
-        ///   DictionaryPaths: 辞書名 ==> 辞書のパス
-        /// </summary>
-        private Dictionary<string, string> DictionaryPaths { get; set; }
+        private Dictionary<string, DictionaryEntry> DictionaryEntries { get; set; }
 
         private Settings settings { get; set; }
         private string GroupName { get; set; }
 
-        public AddWordDialog(string headword, string groupName, Dictionary<string, string> dictionaryPaths)
+        public AddWordDialog(string headword, string groupName, Dictionary<string, DictionaryEntry> dictionaryEntries)
         {
             InitializeComponent();
             Headword.Text = headword;
-            DictionaryPaths = dictionaryPaths;
+            this.DictionaryEntries = dictionaryEntries;
             GroupName = groupName;
             var settingsPath = ConfigurationManager.AppSettings.Get("defaultSettingPath");
-            TargetDictionary.ItemsSource = DictionaryPaths.Select(kv => kv.Key);
+            TargetDictionary.ItemsSource = DictionaryEntries.Select(kv => kv.Key);
             settings = SettingSerializer.LoadSettings(settingsPath);
             var group = settings.DictionaryGroups?.Where(dg => dg.GroupName == groupName).First();
             if (group.DefaultDictionaryIndex != null && group.DefaultDictionaryIndex > -1)
@@ -59,13 +56,13 @@ namespace FistirDictionary
 
         private void okButton_Click(object sender, RoutedEventArgs e)
         {
-            string targetDictionaryPath;
-            if (!DictionaryPaths.TryGetValue((string)TargetDictionary.SelectedValue, out targetDictionaryPath))
+            DictionaryEntry targetDictionaryEntry;
+            if (!DictionaryEntries.TryGetValue((string)TargetDictionary.SelectedValue, out targetDictionaryEntry))
             {
                 return;
             }
             FDictionary.AddWord(
-                targetDictionaryPath,
+                targetDictionaryEntry.DictionaryPath,
                 Headword.Text,
                 Translation.Text,
                 Example.Text);
