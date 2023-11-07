@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore.Sqlite;
 using Microsoft.EntityFrameworkCore.Storage;
 using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Packaging;
+using System.IO;
 
 namespace FistirDictionary
 {
@@ -277,16 +278,24 @@ namespace FistirDictionary
 
         public static Word[] SearchWord(string dictionaryPath, SearchStatement[] statements, bool ignoreCase, string scansionScriptPath)
         {
-            if (!System.IO.File.Exists(dictionaryPath))
+            if (!File.Exists(dictionaryPath))
             {
                 throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
             }
             using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
             var dictionaryName = db.Words.First(word => word.Headword == "__Name").Translation;
             string scriptHash = "";
-            if (scansionScriptPath != null && scansionScriptPath.Length > 0)
+            var rhymeRequired = statements.Where(statement => statement.Target == SearchTarget.Rhyme).Count() > 0;
+            if (rhymeRequired && scansionScriptPath != null && scansionScriptPath.Length > 0)
             {
-                scriptHash = FLua.GetScriptHash(scansionScriptPath);
+                if (File.Exists(scansionScriptPath))
+                {
+                    scriptHash = FLua.GetScriptHash(scansionScriptPath);
+                }
+                else
+                {
+                    throw new FileNotFoundException($"{scansionScriptPath}が見つかりません。");
+                }
             }
             IQueryable<WordRhyme> dbQuery =
                 from word in db.Words
