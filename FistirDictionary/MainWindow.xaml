@@ -44,26 +44,31 @@
                         </StackPanel>
                     </ScrollViewer>
                 </DockPanel>
-                <DataGrid x:Name="WordsViewDataGrid" ItemsSource="{Binding _Words}"
-                          AutoGenerateColumns="False" IsReadOnly="True" FrozenColumnCount="1" MouseDoubleClick="WordsViewDataGrid_MouseDoubleClick">
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="見出し語" Binding="{Binding _Word.Headword}" />
-                        <DataGridTextColumn Width="400" Header="訳語" Binding="{Binding _Word.Translation}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style>
-                                    <Setter Property="TextBlock.TextWrapping" Value="Wrap" />
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                        <DataGridTextColumn Width="400" Header="用例" Binding="{Binding _Word.Example}">
-                            <DataGridTextColumn.ElementStyle>
-                                <Style>
-                                    <Setter Property="TextBlock.TextWrapping" Value="Wrap" />
-                                </Style>
-                            </DataGridTextColumn.ElementStyle>
-                        </DataGridTextColumn>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <Grid>
+                    <DataGrid x:Name="WordsViewDataGrid" ItemsSource="{Binding _Words}"
+                              AutoGenerateColumns="False" IsReadOnly="True" FrozenColumnCount="1" MouseDoubleClick="WordsViewDataGrid_MouseDoubleClick">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="見出し語" Binding="{Binding _Word.Headword}" />
+                            <DataGridTextColumn Width="400" Header="訳語" Binding="{Binding _Word.Translation}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style>
+                                        <Setter Property="TextBlock.TextWrapping" Value="Wrap" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Width="400" Header="用例" Binding="{Binding _Word.Example}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style>
+                                        <Setter Property="TextBlock.TextWrapping" Value="Wrap" />
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <Grid>
+                        <Rectangle x:Name="WaitingScreen" Fill="#99FFFFFF" Visibility="Hidden" />
+                    </Grid>
+                </Grid>
             </DockPanel>
         </DockPanel>
     </Grid>

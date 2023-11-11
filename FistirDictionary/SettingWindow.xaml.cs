@@ -54,22 +54,29 @@ namespace FistirDictionary
             }
             var idx = DictionaryGroupList.SelectedIndex;
             var group = settings.DictionaryGroups[idx];
-            GroupName.Text = group.GroupName;
-            DictionaryList.ItemsSource = group.Dictionaries
-                .Select(path => (path, FDictionary.GetDictionaryMetadata(path)))
-                .Select(metadata => new DictionaryInfo {
-                    Path = metadata.path,
-                    Name = metadata.Item2.First(row => row.Headword == "__Name").Translation,
-                    Description = metadata.Item2.First(row => row.Headword == "__Description").Translation,
-                    WordCount = FDictionary.GetWordCount(metadata.path),
-                    ScansionScript = metadata.Item2.First(row => row.Headword == "__ScansionScript").Translation,
-                    EnableHistory = metadata.Item2.First(row => row.Headword == "__EnableHistory").Translation
-                        .ToLower() == "true" ? true : false,
-                })
-                .ToList();
-            GroupName.IsEnabled = false;
-            CancelChangeGroupName.Visibility = Visibility.Hidden;
-            ChangeGroupName.Content = "変更";
+            try
+            {
+                GroupName.Text = group.GroupName;
+                DictionaryList.ItemsSource = group.DictionaryEntries
+                    .Select(entry => (entry, FDictionary.GetDictionaryMetadata(entry.DictionaryPath)))
+                    .Select(metadata => new DictionaryInfo {
+                        Path = metadata.entry.DictionaryPath,
+                        Name = metadata.Item2.First(row => row.Headword == "__Name").Translation,
+                        Description = metadata.Item2.First(row => row.Headword == "__Description").Translation,
+                        WordCount = FDictionary.GetWordCount(metadata.entry.DictionaryPath),
+                        ScansionScript = metadata.entry.ScansionScript,
+                        EnableHistory = metadata.Item2.First(row => row.Headword == "__EnableHistory").Translation
+                            .ToLower() == "true" ? true : false,
+                    })
+                    .ToList();
+                GroupName.IsEnabled = false;
+                CancelChangeGroupName.Visibility = Visibility.Hidden;
+                ChangeGroupName.Content = "変更";
+            }
+            catch (FDictionary.DictionaryNotFoundExcepction ex)
+            {
+                MessageBox.Show($"辞書グループの読み込みに失敗しました。 {ex.Message}");
+            }
         }
 
         private void Button_Click(object sender, RoutedEventArgs e)
@@ -146,21 +153,21 @@ namespace FistirDictionary
         private void EditDictinoary_Click(object sender, RoutedEventArgs e)
         {
             var row = ((Button)sender).Tag as DictionaryInfo;
-            var dialog = new EditDictionaryDialog(row.Path, row.Name, row.Description, row.EnableHistory, (string)DictionaryGroupList.SelectedValue);
+            var dialog = new EditDictionaryDialog(row.Path, row.Name, row.Description, row.EnableHistory, (string)DictionaryGroupList.SelectedValue, row.ScansionScript);
             var result = dialog.ShowDialog();
             if (result == true)
             {
                 settings = SettingSerializer.LoadSettings(ConfigurationManager.AppSettings.Get("defaultSettingPath"));
                 var idx = DictionaryGroupList.SelectedIndex;
                 var group = settings.DictionaryGroups[idx];
-                DictionaryList.ItemsSource = group.Dictionaries
-                    .Select(path => (path, FDictionary.GetDictionaryMetadata(path)))
+                DictionaryList.ItemsSource = group.DictionaryEntries
+                    .Select(entry => (entry, FDictionary.GetDictionaryMetadata(entry.DictionaryPath)))
                     .Select(metadata => new DictionaryInfo {
-                        Path = metadata.path,
+                        Path = metadata.entry.DictionaryPath,
                         Name = metadata.Item2.First(row => row.Headword == "__Name").Translation,
                         Description = metadata.Item2.First(row => row.Headword == "__Description").Translation,
-                        WordCount = FDictionary.GetWordCount(metadata.path),
-                        ScansionScript = metadata.Item2.First(row => row.Headword == "__ScansionScript").Translation,
+                        WordCount = FDictionary.GetWordCount(metadata.entry.DictionaryPath),
+                        ScansionScript = metadata.entry.ScansionScript,
                         EnableHistory = metadata.Item2.First(row => row.Headword == "__EnableHistory").Translation
                             .ToLower() == "true" ? true : false,
                     })
@@ -179,14 +186,14 @@ namespace FistirDictionary
                 settings = SettingSerializer.LoadSettings(ConfigurationManager.AppSettings.Get("defaultSettingPath"));
                 var idx = DictionaryGroupList.SelectedIndex;
                 var group = settings.DictionaryGroups[idx];
-                DictionaryList.ItemsSource = group.Dictionaries
-                    .Select(path => (path, FDictionary.GetDictionaryMetadata(path)))
+                DictionaryList.ItemsSource = group.DictionaryEntries
+                    .Select(entry => (entry, FDictionary.GetDictionaryMetadata(entry.DictionaryPath)))
                     .Select(metadata => new DictionaryInfo {
-                        Path = metadata.path,
+                        Path = metadata.entry.DictionaryPath,
                         Name = metadata.Item2.First(row => row.Headword == "__Name").Translation,
                         Description = metadata.Item2.First(row => row.Headword == "__Description").Translation,
-                        WordCount = FDictionary.GetWordCount(metadata.path),
-                        ScansionScript = metadata.Item2.First(row => row.Headword == "__ScansionScript").Translation,
+                        WordCount = FDictionary.GetWordCount(metadata.entry.DictionaryPath),
+                        ScansionScript = metadata.entry.ScansionScript,
                         EnableHistory = metadata.Item2.First(row => row.Headword == "__EnableHistory").Translation
                             .ToLower() == "true" ? true : false,
                     })
@@ -205,14 +212,14 @@ namespace FistirDictionary
                 settings = SettingSerializer.LoadSettings(ConfigurationManager.AppSettings.Get("defaultSettingPath"));
                 var idx = DictionaryGroupList.SelectedIndex;
                 var group = settings.DictionaryGroups[idx];
-                DictionaryList.ItemsSource = group.Dictionaries
-                    .Select(path => (path, FDictionary.GetDictionaryMetadata(path)))
+                DictionaryList.ItemsSource = group.DictionaryEntries
+                    .Select(entry => (entry, FDictionary.GetDictionaryMetadata(entry.DictionaryPath)))
                     .Select(metadata => new DictionaryInfo {
-                        Path = metadata.path,
+                        Path = metadata.entry.DictionaryPath,
                         Name = metadata.Item2.First(row => row.Headword == "__Name").Translation,
                         Description = metadata.Item2.First(row => row.Headword == "__Description").Translation,
-                        WordCount = FDictionary.GetWordCount(metadata.path),
-                        ScansionScript = metadata.Item2.First(row => row.Headword == "__ScansionScript").Translation,
+                        WordCount = FDictionary.GetWordCount(metadata.entry.DictionaryPath),
+                        ScansionScript = metadata.entry.ScansionScript,
                         EnableHistory = metadata.Item2.First(row => row.Headword == "__EnableHistory").Translation
                             .ToLower() == "true" ? true : false,
                     })

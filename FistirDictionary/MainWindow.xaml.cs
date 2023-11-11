@@ -20,6 +20,8 @@ using FistirDictionary.ModelExcelTable;
 using System.Xml.Serialization;
 using System.Diagnostics;
 using Colors = System.Windows.Media.Colors;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace FistirDictionary
 {
@@ -50,12 +52,12 @@ namespace FistirDictionary
         ///   Key: 辞書の名前
         ///   Value: 辞書のパス
         /// </summary>
-        private Dictionary<string, string> DictionaryPaths { get; set; }
+        private Dictionary<string, DictionaryEntry> DictionaryPaths { get; set; }
 
         public MainWindow()
         {
             InitializeComponent();
-            DictionaryPaths = new Dictionary<string, string>();
+            DictionaryPaths = new Dictionary<string, DictionaryEntry>();
             var settingsPath = ConfigurationManager.AppSettings.Get("defaultSettingPath");
             settings = SettingSerializer.LoadSettings(settingsPath);
             var groups = settings.DictionaryGroups != null ?
@@ -76,38 +78,59 @@ namespace FistirDictionary
         private DebounceDispatcher debounceTimer = new DebounceDispatcher();
         private void SearchItem_SearchChanged(object sender, EventArgs e)
         {
-            debounceTimer.Debounce(500, (p) =>
+            if (SearchItemStack == null) return;
+            var searchStatements = new List<SearchStatement>();
+            foreach (SearchItem searchItem in SearchItemStack.Children)
             {
-                var searchStatements = new List<SearchStatement>();
-                foreach (SearchItem searchItem in SearchItemStack.Children)
+                if (searchItem.Keyword == "") continue;
+                searchStatements.Add(new SearchStatement
                 {
-                    if (searchItem.Keyword == "") continue;
-                    searchStatements.Add(new SearchStatement
-                    {
-                        Keyword = searchItem.Keyword,
-                        Method = searchItem.Method,
-                        Target = searchItem.Target,
-                    });
-                }
+                    Keyword = searchItem.Keyword,
+                    Method = searchItem.Method,
+                    Target = searchItem.Target,
+                });
+            }
+            debounceTimer.Debounce(200, async (statements) =>
+            {
+                var _searchStatements = (List<SearchStatement>)statements;
                 if (searchStatements.Count == 0) return;
                 IEnumerable<WordView> words = new List<WordView>();
+                WaitingScreen.Visibility = Visibility.Visible;
                 try
                 {
                     foreach (var dpPair in DictionaryPaths)
                     {
-                        words = words.Concat(FDictionary.SearchWord(dpPair.Value, searchStatements.ToArray(), IgnoreCase.IsChecked == true ? true : false)
-                            .Select(word => new WordView {
-                                dictionaryName = dpPair.Key,
-                                dictionaryPath = dpPair.Value,
-                                _Word = word,
-                            }));
+                        var dpath = dpPair.Value.DictionaryPath;
+                        var ig = IgnoreCase.IsChecked == true ? true : false;
+                        var spath = dpPair.Value.ScansionScript;
+                        var result = await Task.Run(() =>
+                        {
+                            return FDictionary.SearchWord(
+                                    dpath,
+                                    _searchStatements.ToArray(),
+                                    ig,
+                                    spath);
+                        });
+                        words = words.Concat(
+                            result.Select(word => new WordView
+                                {
+                                    dictionaryName = dpPair.Key,
+                                    dictionaryPath = dpPair.Value.DictionaryPath,
+                                    _Word = word,
+                                }));
                     }
                 }
                 catch (System.Text.RegularExpressions.RegexParseException ex)
                 {
                     return;
                 }
-                var mainQueryItem = searchStatements.FirstOrDefault(
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"検索エラー: {ex.Message}");
+                    GroupName.SelectedValue = null;
+                    return;
+                }
+                var mainQueryItem = _searchStatements.FirstOrDefault(
                     st =>
                         st.Target == SearchTarget.HeadwordTranslation ||
                         st.Target == SearchTarget.Headword ||
@@ -120,12 +143,12 @@ namespace FistirDictionary
                         case SearchTarget.HeadwordTranslation:
                             words = words.OrderBy(
                                 word => LevenshteinDistance.Calculate(
-                                    word._Word.Headword, ((SearchItem)SearchItemStack.Children[0]).Keyword));
+                                    word._Word.Headword, mainQueryItem.Keyword));
                                 break;
                         case SearchTarget.Translation:
                             words = words.OrderBy(
                                 word => LevenshteinDistance.Calculate(
-                                    word._Word.Translation, ((SearchItem)SearchItemStack.Children[0]).Keyword));
+                                    word._Word.Translation, mainQueryItem.Keyword));
                             break;
                         case default(SearchTarget):
                             break;
@@ -133,7 +156,8 @@ namespace FistirDictionary
                 }
                 _Words = words.ToList();
                 WordsViewDataGrid.ItemsSource = _Words;
-            });
+                WaitingScreen.Visibility = Visibility.Hidden;
+            }, searchStatements);
         }
 
         /// <summary>
@@ -172,23 +196,39 @@ namespace FistirDictionary
             {
                 return;
             }
-            DictionaryPaths = new Dictionary<string, string>();
+            DictionaryPaths = new Dictionary<string, DictionaryEntry>();
             var dictionariesInGroup = settings.DictionaryGroups?
                 .First(dg => dg.GroupName == (string)GroupName.SelectedValue)
-                .Dictionaries;
-            var metadataArray = dictionariesInGroup?
-                .Select(path => FDictionary.GetDictionaryMetadata(path));
-            foreach (var d in metadataArray
-                .Select(words => (from w in words
-                                 where w.Headword == "__Name"
-                                 select w.Translation).First())
-                .Zip(dictionariesInGroup)
-                .Select(pair => new {Name = pair.First, Path = pair.Second})) 
+                .DictionaryEntries;
+            IEnumerable<ICollection<Word>> metadataArray = null;
+            try
             {
-                if (d.Name != null)
+                metadataArray = dictionariesInGroup?
+                    .Select(entry => FDictionary.GetDictionaryMetadata(entry.DictionaryPath));
+                foreach (var d in metadataArray
+                    .Select(words => (from w in words
+                                     where w.Headword == "__Name"
+                                     select w.Translation).First())
+                    .Zip(dictionariesInGroup)
+                    .Select(pair => new {Name = pair.First, Entry = pair.Second})) 
                 {
-                    DictionaryPaths.Add(d.Name, d.Path);
+                    if (d.Name != null)
+                    {
+                        DictionaryPaths.Add(d.Name, d.Entry);
+                    }
                 }
+            }
+            catch (FDictionary.DictionaryNotFoundExcepction ex)
+            {
+                MessageBox.Show($"辞書グループ {GroupName.SelectedValue} を選択できませんでした: {ex.Message}");
+                GroupName.SelectedValue = null;
+                return;
+            }
+            catch (FDictionary.DictionaryBrokenException ex)
+            {
+                MessageBox.Show($"辞書グループ {GroupName.SelectedValue} を選択できませんでした: {ex.Message}");
+                GroupName.SelectedValue = null;
+                return;
             }
             if (settings.DefaultGroupIndex == GroupName.SelectedIndex)
             {

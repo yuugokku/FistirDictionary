@@ -47,6 +47,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="1*" />
                         <RowDefinition Height="1*" />
+                        <RowDefinition Height="1*" />
                     </Grid.RowDefinitions>
 
                     <TextBlock Grid.Row="0" Grid.Column="0" Text="パス" VerticalAlignment="Top" />
@@ -62,6 +63,12 @@
                                   VerticalAlignment="Top" Width="300" Margin="4,8,4,8" SelectionChanged="GroupName_SelectionChanged" />
                         <TextBox x:Name="NewGroupName" Visibility="Hidden" />
                     </DockPanel>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="韻律スクリプトのパス" VerticalAlignment="Top" Margin="8,8,8,0" />
+                    <WrapPanel Orientation="Horizontal" Grid.Row="2" Grid.Column="1">
+                        <TextBox x:Name="ScansionScriptPath" Padding="4" Width="300" HorizontalAlignment="Stretch" />
+                        <Button Content="参照" Width="40" Padding="4" Click="Button_Click_1" />
+                    </WrapPanel>
                 </Grid>
             </Grid>
         </DockPanel>

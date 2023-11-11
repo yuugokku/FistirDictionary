@@ -12,10 +12,50 @@ using Newtonsoft.Json.Linq;
 
 namespace FistirDictionary
 {
+    public class DictionaryEntry
+    {
+        public string? DictionaryPath { get; set; }
+        public string? ScansionScript { get; set; }
+        public string? DerivationScript { get; set; }
+    }
+
+    internal class DictionaryEntryConverter : JsonConverter
+    {
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(DictionaryEntry);
+        }
+
+        public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
+        {
+            JObject jo = JObject.Load(reader);
+
+            string dictionaryPath = jo["DictionaryPath"].Value<string>();
+            string scansionScript = jo["ScansionScript"].Value<string>();
+            string derivationScript = jo["DerivationScript"].Value<string>();
+            return new DictionaryEntry
+            {
+                DictionaryPath = dictionaryPath,
+                ScansionScript = scansionScript,
+                DerivationScript = derivationScript
+            };
+        }
+
+        public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
+        {
+            var dictionaryEntry = (DictionaryEntry)value;
+            var jo = new JObject();
+            jo.Add("DictionaryPath", dictionaryEntry.DictionaryPath);
+            jo.Add("ScansionScript", dictionaryEntry.ScansionScript);
+            jo.Add("DerivationScript", dictionaryEntry.DerivationScript);
+            jo.WriteTo(writer);
+        }
+    }
+
     internal class DictionaryGroup
     {
         public string? GroupName { get; set;}
-        public List<string>? Dictionaries { get; set;}
+        public List<DictionaryEntry>? DictionaryEntries { get; set;}
         public int? DefaultDictionaryIndex { get; set;}
     }
 
@@ -32,9 +72,16 @@ namespace FistirDictionary
 
             string groupName = jo["GroupName"].Value<string>();
             int defaultDictionaryIndex = jo["DefaultDictionaryIndex"].Value<int>();
-            var dictionaries = jo["Dictionaries"].ToObject<List<string>>();
 
-            return new DictionaryGroup { Dictionaries = dictionaries, DefaultDictionaryIndex = defaultDictionaryIndex, GroupName = groupName };
+            var dictionaryEntryArray = jo["DictionaryEntries"].ToObject<JArray>();
+            var dictionaryEntries = new List<DictionaryEntry>();
+            foreach (var de in dictionaryEntryArray)
+            {
+                var dictionaryGroup = de.ToObject<DictionaryEntry>();
+                dictionaryEntries.Add(dictionaryGroup);
+            }
+
+            return new DictionaryGroup { DictionaryEntries = dictionaryEntries, DefaultDictionaryIndex = defaultDictionaryIndex, GroupName = groupName };
         }
 
         public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
@@ -43,7 +90,7 @@ namespace FistirDictionary
             var jo = new JObject();
             jo.Add("GroupName", dictionaryGroup.GroupName);
             jo.Add("DefaultDictionaryIndex", dictionaryGroup.DefaultDictionaryIndex);
-            jo.Add("Dictionaries", JArray.FromObject(dictionaryGroup.Dictionaries));
+            jo.Add("DictionaryEntries", JArray.FromObject(dictionaryGroup.DictionaryEntries));
             jo.WriteTo(writer);
         }
     }
@@ -135,7 +182,9 @@ namespace FistirDictionary
                 {
                     FDictionary.CreateEmptyDictionary(sampleDictPath, "サンプル", "サンプル辞書です。", "", "", true, "Kapahata <charzkpht@gmail.com>");
                 }
-                var dictionaryGroup = new DictionaryGroup { GroupName = "サンプル", Dictionaries = new List<string>() { sampleDictPath } };
+                var dictionaryGroup = new DictionaryGroup { GroupName = "サンプル", DictionaryEntries = new List<DictionaryEntry>() { 
+                    new DictionaryEntry { DictionaryPath = sampleDictPath }
+                } };
                 var dgs = new List<DictionaryGroup> { dictionaryGroup };
                 settings = new Settings { DictionaryGroups = dgs, Username = null, Email = null };
                 using (var fs = new System.IO.FileStream(settingsPath, System.IO.FileMode.OpenOrCreate, System.IO.FileAccess.Write))
@@ -161,7 +210,8 @@ namespace FistirDictionary
                     JsonConverterCollection converters = new JsonConverterCollection
                     {
                         new SettingsConverter(),
-                        new DictionaryGroupConverter()
+                        new DictionaryGroupConverter(),
+                        new DictionaryEntryConverter()
                     };
                     settings = JsonConvert.DeserializeObject<Settings>(json, new JsonSerializerSettings { Converters = converters});
                 }

@@ -77,9 +77,13 @@ namespace FistirDictionary
                 settings.DictionaryGroups.Add(new DictionaryGroup
                 {
                     GroupName = NewGroupName.Text,
-                    Dictionaries = new List<string>
+                    DictionaryEntries = new List<DictionaryEntry>
                     {
-                        DictionaryPath.Text
+                        new DictionaryEntry
+                        {
+                            DictionaryPath = DictionaryPath.Text,
+                            ScansionScript = ScansionScriptPath.Text,
+                        }
                     }
                 });
                 settings.Save(settingsPath);
@@ -88,7 +92,10 @@ namespace FistirDictionary
             {
                 settings.DictionaryGroups?
                     .First(st => st.GroupName == GroupName.Text)?
-                    .Dictionaries?.Add(DictionaryPath.Text);
+                    .DictionaryEntries?.Add(new DictionaryEntry {
+                        DictionaryPath = DictionaryPath.Text,
+                        ScansionScript = ScansionScriptPath.Text,
+                    });
                 settings.Save(settingsPath);
             }
 
@@ -112,6 +119,20 @@ namespace FistirDictionary
             if (result == true)
             {
                 DictionaryPath.Text = dialog.FileName;
+            }
+        }
+
+        private void Button_Click_1(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog();
+            dialog.FileName = "";
+            dialog.DefaultExt = "*.lua";
+            dialog.Filter = "Luaスクリプト (*.lua)|*.lua";
+
+            bool? result = dialog.ShowDialog();
+            if (result == true)
+            {
+                ScansionScriptPath.Text = dialog.FileName;
             }
         }
     }

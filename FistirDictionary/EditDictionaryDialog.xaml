@@ -6,7 +6,7 @@
         xmlns:local="clr-namespace:FistirDictionary"
         mc:Ignorable="d"
         ResizeMode="NoResize"
-        Title="EditDictionaryDialog" Height="450" Width="800">
+        Title="辞書を編集" Height="450" Width="800">
     <Grid Margin="12">
         <DockPanel LastChildFill="True">
             <Grid DockPanel.Dock="Bottom">
