@@ -95,6 +95,7 @@ namespace FistirDictionary
                 var _searchStatements = (List<SearchStatement>)statements;
                 if (searchStatements.Count == 0) return;
                 IEnumerable<WordView> words = new List<WordView>();
+                WaitingScreen.Visibility = Visibility.Visible;
                 try
                 {
                     foreach (var dpPair in DictionaryPaths)
@@ -155,6 +156,7 @@ namespace FistirDictionary
                 }
                 _Words = words.ToList();
                 WordsViewDataGrid.ItemsSource = _Words;
+                WaitingScreen.Visibility = Visibility.Hidden;
             }, searchStatements);
         }
 
