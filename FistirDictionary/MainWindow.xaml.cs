@@ -20,6 +20,8 @@ using FistirDictionary.ModelExcelTable;
 using System.Xml.Serialization;
 using System.Diagnostics;
 using Colors = System.Windows.Media.Colors;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace FistirDictionary
 {
@@ -76,43 +78,58 @@ namespace FistirDictionary
         private DebounceDispatcher debounceTimer = new DebounceDispatcher();
         private void SearchItem_SearchChanged(object sender, EventArgs e)
         {
-            debounceTimer.Debounce(500, (p) =>
+            if (SearchItemStack == null) return;
+            var searchStatements = new List<SearchStatement>();
+            foreach (SearchItem searchItem in SearchItemStack.Children)
             {
-                var searchStatements = new List<SearchStatement>();
-                foreach (SearchItem searchItem in SearchItemStack.Children)
+                if (searchItem.Keyword == "") continue;
+                searchStatements.Add(new SearchStatement
                 {
-                    if (searchItem.Keyword == "") continue;
-                    searchStatements.Add(new SearchStatement
-                    {
-                        Keyword = searchItem.Keyword,
-                        Method = searchItem.Method,
-                        Target = searchItem.Target,
-                    });
-                }
+                    Keyword = searchItem.Keyword,
+                    Method = searchItem.Method,
+                    Target = searchItem.Target,
+                });
+            }
+            debounceTimer.Debounce(200, async (statements) =>
+            {
+                var _searchStatements = (List<SearchStatement>)statements;
                 if (searchStatements.Count == 0) return;
                 IEnumerable<WordView> words = new List<WordView>();
                 try
                 {
                     foreach (var dpPair in DictionaryPaths)
                     {
+                        var dpath = dpPair.Value.DictionaryPath;
+                        var ig = IgnoreCase.IsChecked == true ? true : false;
+                        var spath = dpPair.Value.ScansionScript;
+                        var result = await Task.Run(() =>
+                        {
+                            return FDictionary.SearchWord(
+                                    dpath,
+                                    _searchStatements.ToArray(),
+                                    ig,
+                                    spath);
+                        });
                         words = words.Concat(
-                            FDictionary.SearchWord(
-                                dpPair.Value.DictionaryPath,
-                                searchStatements.ToArray(),
-                                IgnoreCase.IsChecked == true ? true : false,
-                                dpPair.Value.ScansionScript)
-                            .Select(word => new WordView {
-                                dictionaryName = dpPair.Key,
-                                dictionaryPath = dpPair.Value.DictionaryPath,
-                                _Word = word,
-                            }));
+                            result.Select(word => new WordView
+                                {
+                                    dictionaryName = dpPair.Key,
+                                    dictionaryPath = dpPair.Value.DictionaryPath,
+                                    _Word = word,
+                                }));
                     }
                 }
                 catch (System.Text.RegularExpressions.RegexParseException ex)
                 {
                     return;
                 }
-                var mainQueryItem = searchStatements.FirstOrDefault(
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"検索エラー: {ex.Message}");
+                    GroupName.SelectedValue = null;
+                    return;
+                }
+                var mainQueryItem = _searchStatements.FirstOrDefault(
                     st =>
                         st.Target == SearchTarget.HeadwordTranslation ||
                         st.Target == SearchTarget.Headword ||
@@ -138,7 +155,7 @@ namespace FistirDictionary
                 }
                 _Words = words.ToList();
                 WordsViewDataGrid.ItemsSource = _Words;
-            });
+            }, searchStatements);
         }
 
         /// <summary>
