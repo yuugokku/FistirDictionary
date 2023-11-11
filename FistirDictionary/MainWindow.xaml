@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FistirDictionary"
         mc:Ignorable="d"
-        Title="FDIC: FistirDictionary v0.1.0" Height="650" Width="1200">
+        Title="FDIC: FistirDictionary v0.1.1" Height="650" Width="1200">
     <Grid>
         <DockPanel LastChildFill="true">
             <Menu DockPanel.Dock="Top">
