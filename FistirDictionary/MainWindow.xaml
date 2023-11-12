@@ -28,8 +28,8 @@
                 </WrapPanel>
                 <DockPanel DockPanel.Dock="Left" LastChildFill="True">
                     <WrapPanel DockPanel.Dock="Top">
-                        <Button x:Name="AddWordButton" Content="単語を登録" Padding="4,4,4,4" Margin="2,2,2,2" Click="AddWordButton_Click" />
-                        <CheckBox x:Name="IgnoreCase" Margin="4" Content="大文字と小文字を無視する" IsChecked="True"
+                        <Button x:Name="AddWordButton" Content="単語を登録(_A)" Padding="4,4,4,4" Margin="2,2,2,2" Click="AddWordButton_Click" />
+                        <CheckBox x:Name="IgnoreCase" Margin="4" Content="大文字と小文字を無視する(_I)" IsChecked="True"
                                   VerticalAlignment="Center" Checked="IgnoreCase_Checked" Unchecked="IgnoreCase_Unchecked" />
                     </WrapPanel>
                     <ScrollViewer DockPanel.Dock="Bottom">
@@ -48,7 +48,45 @@
                     <DataGrid x:Name="WordsViewDataGrid" ItemsSource="{Binding _Words}"
                               AutoGenerateColumns="False" IsReadOnly="True" FrozenColumnCount="1" MouseDoubleClick="WordsViewDataGrid_MouseDoubleClick">
                         <DataGrid.Columns>
+
                             <DataGridTextColumn Header="見出し語" Binding="{Binding _Word.Headword}" />
+
+                            <DataGridTemplateColumn Header="タグ" Width="100">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <ItemsControl ItemsSource="{Binding Tags}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <Grid Margin="1,1,2,1">
+                                                        <Grid.Resources>
+                                                            <SolidColorBrush x:Key="TagColor" Color="#FFDFF0FF" />
+                                                            <SolidColorBrush x:Key="TagColorHover" Color="#FF68B5FA" />
+                                                            <Style x:Key="HoverTagStyle" TargetType="{x:Type TextBlock}">
+                                                                <Setter Property="Background" Value="{StaticResource TagColor}" />
+                                                            </Style>
+                                                        </Grid.Resources>
+                                                        <Border CornerRadius="5" />
+                                                        <TextBlock Foreground="Black" Padding="2" Text="{Binding}" x:Name="TagName" Style="{StaticResource HoverTagStyle}">
+                                                            <TextBlock.ContextMenu>
+                                                                <ContextMenu>
+                                                                    <MenuItem Header="タグを追加" x:Name="AddTag" Click="AddTag_Click" />
+                                                                    <MenuItem Header="タグを削除" x:Name="RemoveTag" Click="RemoveTag_Click" />
+                                                                </ContextMenu>
+                                                            </TextBlock.ContextMenu>
+                                                        </TextBlock>
+                                                    </Grid>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+
                             <DataGridTextColumn Width="400" Header="訳語" Binding="{Binding _Word.Translation}">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style>
@@ -56,6 +94,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
+
                             <DataGridTextColumn Width="400" Header="用例" Binding="{Binding _Word.Example}">
                                 <DataGridTextColumn.ElementStyle>
                                     <Style>
@@ -63,6 +102,7 @@
                                     </Style>
                                 </DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
+
                         </DataGrid.Columns>
                     </DataGrid>
                     <Grid>

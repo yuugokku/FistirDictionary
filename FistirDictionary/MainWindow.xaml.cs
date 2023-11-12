@@ -1,27 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Configuration;
 using System.Data;
-using DocumentFormat.OpenXml.Spreadsheet;
-using ClosedXML.Excel;
-using FistirDictionary.ModelExcelTable;
-using System.Xml.Serialization;
-using System.Diagnostics;
 using Colors = System.Windows.Media.Colors;
-using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 
 namespace FistirDictionary
 {
@@ -32,6 +19,7 @@ namespace FistirDictionary
     {
         private class WordView
         {
+            public List<string> Tags { get; set; }
             public string? dictionaryName { get; set; }
             public string? dictionaryPath { get; set; }
             public Word _Word { get; set; }
@@ -117,6 +105,7 @@ namespace FistirDictionary
                                     dictionaryName = dpPair.Key,
                                     dictionaryPath = dpPair.Value.DictionaryPath,
                                     _Word = word,
+                                    Tags = new List<string> { "Tag1", "Tag2" },
                                 }));
                     }
                 }
@@ -406,6 +395,22 @@ namespace FistirDictionary
         private void IgnoreCase_Unchecked(object sender, RoutedEventArgs e)
         {
             SearchItem_SearchChanged(sender, e);
+        }
+
+        private void AddTag_Click(object sender, RoutedEventArgs e)
+        {
+            if (WordsViewDataGrid.SelectedIndex < 0) return;
+
+            var idx = WordsViewDataGrid.SelectedIndex;
+
+        }
+
+        private void RemoveTag_Click(object sender, RoutedEventArgs e)
+        {
+            if (WordsViewDataGrid.SelectedIndex < 0) return;
+
+            var idx = WordsViewDataGrid.SelectedIndex;
+
         }
     }
 }

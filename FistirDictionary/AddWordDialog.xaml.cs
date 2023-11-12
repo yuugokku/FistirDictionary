@@ -46,19 +46,34 @@ namespace FistirDictionary
             {
                 TargetDictionary.SelectedIndex = 0;
             }
+
+            TagView.Tags = new List<string> { "古語", "イザルタ方言" };
         }
 
         private void CancelButton_Click(object sender, RoutedEventArgs e)
         {
+            if (TagView.PreventSwitch)
+            {
+                return;
+            }
             this.DialogResult = false;
             this.Close();
         }
 
         private void okButton_Click(object sender, RoutedEventArgs e)
         {
+            if (TagView.PreventSwitch)
+            {
+                return;
+            }
             DictionaryEntry targetDictionaryEntry;
             if (!DictionaryEntries.TryGetValue((string)TargetDictionary.SelectedValue, out targetDictionaryEntry))
             {
+                return;
+            }
+            if (Headword.Text.Length == 0)
+            {
+                MessageBox.Show("見出し語を入力してください。");
                 return;
             }
             FDictionary.AddWord(
