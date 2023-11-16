@@ -104,8 +104,15 @@ namespace FistirDictionary
                                 {
                                     dictionaryName = dpPair.Key,
                                     dictionaryPath = dpPair.Value.DictionaryPath,
-                                    _Word = word,
-                                    Tags = new List<string> { "Tag1", "Tag2" },
+                                    _Word = new Word
+                                    {
+                                        WordID = word.WordID,
+                                        Headword = word.Headword,
+                                        Translation = word.Translation,
+                                        Example = word.Example,
+                                        UpdatedAt = word.UpdatedAt,
+                                    },
+                                    Tags = word.Tags != null || word.Tags.Count() > 0 ? word.Tags.ToList() : new List<string> { "(+)" },
                                 }));
                     }
                 }

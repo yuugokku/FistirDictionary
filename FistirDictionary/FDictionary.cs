@@ -82,9 +82,20 @@ namespace FistirDictionary
             public string? Translation { get; set; }
             public string? Example { get; set; }
             public DateTime? UpdatedAt { get; set; }
+            public string[]? Tags { get; set; }
 
             public string? ScansionScript { get; set; }
             public string? Scanned { get; set; }
+        }
+
+        public class WordView
+        {
+            public int WordID { get; set; }
+            public string? Headword { get; set; }
+            public string? Translation { get; set; }
+            public string? Example { get; set; }
+            public DateTime? UpdatedAt { get; set; }
+            public string[]? Tags { get; set; }
         }
 
         public static string GetSqliteConnectionString(string filepath)
@@ -276,7 +287,7 @@ namespace FistirDictionary
             db.SaveChanges();
         }
 
-        public static Word[] SearchWord(string dictionaryPath, SearchStatement[] statements, bool ignoreCase, string scansionScriptPath)
+        public static WordView[] SearchWord(string dictionaryPath, SearchStatement[] statements, bool ignoreCase, string scansionScriptPath)
         {
             if (!File.Exists(dictionaryPath))
             {
@@ -311,6 +322,10 @@ namespace FistirDictionary
                     UpdatedAt = word.UpdatedAt,
                     Scanned = wr.Scanned,
                     ScansionScript = wr.ScansionScript,
+                    Tags = db.TagWords
+                        .Where(tw => tw.WordID == word.WordID)
+                        .Join(db.Tags, tw => tw.TagID, tag => tag.TagID, (tw, tag) => tag.TagName)
+                        .ToArray(),
                 };
             foreach (var statement in statements)
             {
@@ -614,12 +629,13 @@ namespace FistirDictionary
                     }
                 }
             }
-            var result = query.Select(wordRhyme => new Word {
+            var result = query.Select(wordRhyme => new WordView {
                 WordID = wordRhyme.WordID,
                 Headword = wordRhyme.Headword,
                 Translation = wordRhyme.Translation,
                 Example = wordRhyme.Example,
                 UpdatedAt = wordRhyme.UpdatedAt,
+                Tags = wordRhyme.Tags,
             }).ToArray();
 
             if (scansionScriptPath != null &&
@@ -687,6 +703,18 @@ namespace FistirDictionary
             var result = db.Words.Where(word => word.Headword != null && !word.Headword.StartsWith("__")).Count();
             return result;
         }
+
+        public static string[] GetTags(string dictionaryPath, int wordID)
+        {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
+            using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
+            var result = db.TagWords.Where(tw => tw.WordID == wordID)
+                .Join(db.Tags, tw => tw.TagID, tag => tag.TagID, (tw, tag) => tag.TagName);
+            return result.ToArray();
+        }
     }
 
     internal class DictionaryContext : DbContext
@@ -697,6 +725,8 @@ namespace FistirDictionary
         public DbSet<WordHistory> WordHistories { get; set; }
         public DbSet<Rhyme> Rhymes { get; set; }
         public DbSet<Derivation> Derivation { get; set; }
+        public DbSet<Tag> Tags { get; set; }
+        public DbSet<TagWord> TagWords { get; set; }
 
         public DictionaryContext(string connectionString)
         {
@@ -706,7 +736,11 @@ namespace FistirDictionary
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseSqlite(_connectionString).LogTo(Console.WriteLine);
+            optionsBuilder.UseSqlite(_connectionString).LogTo(
+                message => Debug.WriteLine(message),
+                new[] { DbLoggerCategory.Database.Name},
+                Microsoft.Extensions.Logging.LogLevel.Debug,
+                Microsoft.EntityFrameworkCore.Diagnostics.DbContextLoggerOptions.LocalTime);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -769,5 +803,21 @@ namespace FistirDictionary
         public string? DerivationScript { get; set; }
         public string? DerivationForm { get; set; }
         public string? Headword { get; set; }
+    }
+
+    internal class TagWord
+    {
+        [Key]
+        public int TagWordID { get; set; }
+        public int WordID { get; set; }
+        public int TagID { get; set; }
+    }
+
+    internal class Tag
+    {
+        [Key]
+        public int TagID { get; set; }
+        public string? TagName { get; set; }
+        public string? Description { get; set; }
     }
 }
