@@ -103,6 +103,10 @@ namespace FistirDictionary
                 {
                     return SearchMethod.RegexMatch;
                 }
+                if ((bool)TagMatch.IsChecked)
+                {
+                    return SearchMethod.TagMatch;
+                }
                 return null;
             }
         }
@@ -119,6 +123,25 @@ namespace FistirDictionary
         private void RadioButton_Checked(object sender, RoutedEventArgs e)
         {
             OnSearchChanged(e);
+
+            if (TagMatch != null)
+            {
+                if (TagMatch.IsChecked == true)
+                {
+                    HeadwordTranslation.IsEnabled = false;
+                    Headword.IsEnabled = false;
+                    Translation.IsEnabled = false;
+                    Example.IsEnabled = false;
+                    Rhyme.IsEnabled = false;
+                } else
+                {
+                    HeadwordTranslation.IsEnabled = true;
+                    Headword.IsEnabled = true;
+                    Translation.IsEnabled = true;
+                    Example.IsEnabled = true;
+                    Rhyme.IsEnabled = true;
+                }
+            }
         }
 
         private void KeywordTextBox_TextChanged(object sender, TextChangedEventArgs e)

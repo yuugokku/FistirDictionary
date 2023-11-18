@@ -78,6 +78,12 @@
                         Content="の正規表現にマッチ"
                         Checked="RadioButton_Checked"
                     />
+                    <RadioButton
+                        x:Name="TagMatch"
+                        Margin="5,0,5,0"
+                        Content="タグ"
+                        Checked="RadioButton_Checked"
+                    />
                 </WrapPanel>
             </StackPanel>
         </DockPanel>

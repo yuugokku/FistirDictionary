@@ -50,12 +50,25 @@ namespace FistirDictionary
 
         private void cancelButton_Click(object sender, RoutedEventArgs e)
         {
+            if (TagView.PreventSwitch)
+            {
+                return;
+            }
             this.DialogResult = false;
             this.Close();
         }
 
         private void okButton_Click(object sender, RoutedEventArgs e)
         {
+            if (TagView.PreventSwitch)
+            {
+                return;
+            }
+            if (Headword.Text.Length == 0)
+            {
+                MessageBox.Show("見出し語を入力してください。");
+                return;
+            }
             FDictionary.UpdateWord(
                 DictionaryPath,
                 WordID,

@@ -5,13 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:FistirDictionary"
         mc:Ignorable="d"
-        MinHeight="200"
-        MinWidth="300"
         SizeToContent="WidthAndHeight"
         ResizeMode="NoResize"
-        Title="単語を編集" Height="450" Width="800">
+        Title="単語を編集" Height="500" Width="800">
     <Grid>
-        <TabControl Width="800">
+        <TabControl Width="800" Height="480">
             <TabItem Header="編集">
                 <DockPanel LastChildFill="True">
                     <Grid DockPanel.Dock="Bottom">
@@ -49,6 +47,7 @@
                             </Grid.ColumnDefinitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="1*" />
+                                <RowDefinition Height="1*" />
                                 <RowDefinition Height="3*" />
                                 <RowDefinition Height="3*" />
                                 <RowDefinition Height="1*" />
@@ -58,18 +57,23 @@
                             <TextBox x:Name="Headword" Grid.Row="0" Grid.Column="1" HorizontalAlignment="Left"
                                      VerticalAlignment="Top" Padding="4" MaxLength="300" Margin="4,8,4,8" Width="500"/>
 
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="訳語" VerticalAlignment="Top" Margin="8,8,8,8" />
-                            <TextBox x:Name="Translation" Grid.Row="1" Grid.Column="1" Padding="4" Height="120"
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="タグ" VerticalAlignment="Top" Margin="8,8,8,0" />
+                            <WrapPanel Orientation="Vertical" Grid.Row="1" Grid.Column="1" >
+                                <local:TagControl x:Name="TagView" Padding="1" />
+                            </WrapPanel>
+
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="訳語" VerticalAlignment="Top" Margin="8,8,8,8" />
+                            <TextBox x:Name="Translation" Grid.Row="2" Grid.Column="1" Padding="4"
                                      AcceptsReturn="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Visible" Margin="4,8,4,8" />
 
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="用例" VerticalAlignment="Top" Margin="8,8,8,0" />
-                            <TextBox x:Name="Example" Grid.Row="2" Grid.Column="1" Padding="4" Height="120"
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="用例" VerticalAlignment="Top" Margin="8,8,8,0" />
+                            <TextBox x:Name="Example" Grid.Row="3" Grid.Column="1" Padding="4"
                                      AcceptsReturn="True" TextWrapping="Wrap"
                                      VerticalScrollBarVisibility="Visible" Margin="4,8,4,8" />
 
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="追加先辞書" VerticalAlignment="Top" Margin="8,8,8,0" />
-                            <DockPanel Grid.Row="3" Grid.Column="1">
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="追加先辞書" VerticalAlignment="Top" Margin="8,8,8,0" />
+                            <DockPanel Grid.Row="4" Grid.Column="1">
                                 <ComboBox x:Name="TargetDictionary" HorizontalAlignment="Left" IsEnabled="False"
                                           VerticalAlignment="Top" Width="300" Margin="4,8,4,8" />
                             </DockPanel>

@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Packaging;
 using System.IO;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace FistirDictionary
 {
@@ -30,6 +31,7 @@ namespace FistirDictionary
     public enum SearchMethod
     {
         RegexMatch,
+        TagMatch,
         Includes,
         StartsWith,
         EndsWith,
@@ -82,9 +84,20 @@ namespace FistirDictionary
             public string? Translation { get; set; }
             public string? Example { get; set; }
             public DateTime? UpdatedAt { get; set; }
+            public IEnumerable<string>? Tags { get; set; }
 
             public string? ScansionScript { get; set; }
             public string? Scanned { get; set; }
+        }
+
+        public class WordView
+        {
+            public int WordID { get; set; }
+            public string? Headword { get; set; }
+            public string? Translation { get; set; }
+            public string? Example { get; set; }
+            public DateTime? UpdatedAt { get; set; }
+            public IEnumerable<string>? Tags { get; set; }
         }
 
         public static string GetSqliteConnectionString(string filepath)
@@ -276,7 +289,7 @@ namespace FistirDictionary
             db.SaveChanges();
         }
 
-        public static Word[] SearchWord(string dictionaryPath, SearchStatement[] statements, bool ignoreCase, string scansionScriptPath)
+        public static WordView[] SearchWord(string dictionaryPath, SearchStatement[] statements, bool ignoreCase, string scansionScriptPath)
         {
             if (!File.Exists(dictionaryPath))
             {
@@ -311,6 +324,14 @@ namespace FistirDictionary
                     UpdatedAt = word.UpdatedAt,
                     Scanned = wr.Scanned,
                     ScansionScript = wr.ScansionScript,
+                    Tags = from tw in (
+                               from _tw in db.TagWords
+                               where _tw.WordID == word.WordID
+                               select _tw
+                           )
+                           join tag in db.Tags
+                           on tw.TagID equals tag.TagID
+                           select tag.TagName,
                 };
             foreach (var statement in statements)
             {
@@ -532,6 +553,9 @@ namespace FistirDictionary
                                 break;
                         }
                         break;
+                    case SearchMethod.TagMatch:
+                        dbQuery = dbQuery.Where(word => word.Tags.Contains(statement.Keyword));
+                        break;
                     case default(SearchMethod):
                         break;
                 }
@@ -614,12 +638,13 @@ namespace FistirDictionary
                     }
                 }
             }
-            var result = query.Select(wordRhyme => new Word {
+            var result = query.Select(wordRhyme => new WordView {
                 WordID = wordRhyme.WordID,
                 Headword = wordRhyme.Headword,
                 Translation = wordRhyme.Translation,
                 Example = wordRhyme.Example,
                 UpdatedAt = wordRhyme.UpdatedAt,
+                Tags = wordRhyme.Tags,
             }).ToArray();
 
             if (scansionScriptPath != null &&
@@ -687,6 +712,81 @@ namespace FistirDictionary
             var result = db.Words.Where(word => word.Headword != null && !word.Headword.StartsWith("__")).Count();
             return result;
         }
+
+        public static string[] GetTags(string dictionaryPath, int wordID)
+        {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
+            using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
+            var result = db.TagWords.Where(tw => tw.WordID == wordID)
+                .Join(db.Tags, tw => tw.TagID, tag => tag.TagID, (tw, tag) => tag.TagName);
+            return result.ToArray();
+        }
+
+        public static void SetTags(string dictionaryPath, int wordID, string[] tags)
+        {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
+            using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
+            foreach (var tag in tags)
+            {
+                var tagRow = db.Tags.FirstOrDefault(_tag => _tag.TagName == tag);
+                if (tagRow == null)
+                {
+                    EntityEntry<Tag> tagEntry = db.Tags.Add(new Tag { TagName = tag });
+                    db.TagWords.Add(new TagWord
+                    {
+                        TagID = tagEntry.Entity.TagID,
+                        WordID = wordID,
+                    });
+                    continue;
+                }
+                if (!db.TagWords
+                    .Join(
+                        db.Tags,
+                        tw => tw.TagID,
+                        _tag => _tag.TagID,
+                        (tw, _tag) => new { tw.WordID, tw.TagID, _tag.TagName })
+                    .Where(t => t.WordID == wordID && t.TagName == tag).Any())
+                {
+                    db.TagWords.Add(new TagWord
+                    {
+                        TagID = tagRow.TagID,
+                        WordID = wordID,
+                    });
+                }
+            }
+            db.SaveChanges();
+        }
+
+        public static void RemoveTag(string dictionaryPath, int wordID, string tag)
+        {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
+            using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
+            var tw = db.TagWords
+                .Single(_tw => _tw.WordID == wordID &&
+                    _tw.TagID == db.Tags.First(_tag => _tag.TagName == tag).TagID);
+            db.TagWords.Remove(tw);
+            db.SaveChanges();
+        }
+
+        public static async Task<string[]> QueryTags(string dictionaryPath, string query)
+        {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
+            using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
+            var result = await db.Tags.Where(tag => tag.TagName.Contains(query)).Select(tag => tag.TagName).ToArrayAsync();
+            return result;
+        }
     }
 
     internal class DictionaryContext : DbContext
@@ -697,6 +797,8 @@ namespace FistirDictionary
         public DbSet<WordHistory> WordHistories { get; set; }
         public DbSet<Rhyme> Rhymes { get; set; }
         public DbSet<Derivation> Derivation { get; set; }
+        public DbSet<Tag> Tags { get; set; }
+        public DbSet<TagWord> TagWords { get; set; }
 
         public DictionaryContext(string connectionString)
         {
@@ -706,7 +808,11 @@ namespace FistirDictionary
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseSqlite(_connectionString).LogTo(Console.WriteLine);
+            optionsBuilder.UseSqlite(_connectionString, opt => opt.MinBatchSize(1).MaxBatchSize(100)).LogTo(
+                message => Debug.WriteLine(message),
+                new[] { DbLoggerCategory.Database.Name},
+                Microsoft.Extensions.Logging.LogLevel.Debug,
+                Microsoft.EntityFrameworkCore.Diagnostics.DbContextLoggerOptions.LocalTime);
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -769,5 +875,21 @@ namespace FistirDictionary
         public string? DerivationScript { get; set; }
         public string? DerivationForm { get; set; }
         public string? Headword { get; set; }
+    }
+
+    internal class TagWord
+    {
+        [Key]
+        public int TagWordID { get; set; }
+        public int WordID { get; set; }
+        public int TagID { get; set; }
+    }
+
+    internal class Tag
+    {
+        [Key]
+        public int TagID { get; set; }
+        public string? TagName { get; set; }
+        public string? Description { get; set; }
     }
 }
