@@ -16,6 +16,11 @@ using System.Windows.Shapes;
 
 namespace FistirDictionary
 {
+    public class TagsRemovedEventArgs : EventArgs
+    {
+        public string? RemovedTag { get; set; }
+    }
+
     /// <summary>
     /// TagControl.xaml の相互作用ロジック
     /// </summary>
@@ -32,7 +37,6 @@ namespace FistirDictionary
                     BindsTwoWayByDefault = true,
                     PropertyChangedCallback = OnTagsChanged,
                 });
-
         private static void OnTagsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
             TagControl tc = (TagControl)d;
@@ -80,6 +84,40 @@ namespace FistirDictionary
             }
         }
 
+        public static readonly DependencyProperty AllowUpdateProperty =
+            DependencyProperty.Register(
+                nameof(TagControl.AllowUpdate),
+                typeof(bool),
+                typeof(TagControl),
+                new FrameworkPropertyMetadata
+                {
+                    DefaultValue = false,
+                    BindsTwoWayByDefault = true,
+                });
+
+        public bool AllowUpdate
+        {
+            get
+            {
+                return (bool)GetValue(AllowUpdateProperty);
+            }
+            set
+            {
+                SetValue(AllowUpdateProperty, value);
+            }
+        }
+
+        public static readonly DependencyProperty DictionaryPathProperty =
+            DependencyProperty.Register(
+                nameof(TagControl.DictionaryPath),
+                typeof(string),
+                typeof(TagControl),
+                new FrameworkPropertyMetadata
+                {
+                    DefaultValue = ""
+                });
+        public string DictionaryPath { get; set; }
+
         private bool _preventSwitch { get; set; }
         public bool PreventSwitch
         {
@@ -98,13 +136,22 @@ namespace FistirDictionary
             }
         }
 
-        public event EventHandler<EventArgs>? TagsChanged;
+        public event EventHandler<EventArgs>? TagsAdded;
         [Browsable(true)]
-        [Description("Tagsプロパティが変更されたときにトリガーされます。")]
+        [Description("Tagsプロパティにアイテムが追加されたときにトリガーされます。")]
         [Category("動作")]
         protected virtual void OnTagsChanged(EventArgs e)
         {
-            TagsChanged?.Invoke(this, e);
+            TagsAdded?.Invoke(this, e);
+        }
+
+        public event EventHandler<TagsRemovedEventArgs> TagsRemoved;
+        [Browsable(true)]
+        [Description("Tagsプロパティからアイテムが削除されたときにトリガーされます。")]
+        [Category("動作")]
+        protected virtual void OnTagsRemoved(TagsRemovedEventArgs e)
+        {
+            TagsRemoved.Invoke(this, e);
         }
 
         public TagControl()
@@ -159,8 +206,10 @@ namespace FistirDictionary
             var menuItem = (MenuItem)sender;
             var menu = (ContextMenu)menuItem.Parent;
             var textBlock = (TextBlock)menu.PlacementTarget;
+            var removedTag = textBlock.Text;
             var tags = Tags.Where(item => item != textBlock.Text).ToList();
             Tags = tags;
+            OnTagsRemoved(new TagsRemovedEventArgs { RemovedTag = removedTag });
         }
     }
 }

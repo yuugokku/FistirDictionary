@@ -404,25 +404,30 @@ namespace FistirDictionary
             SearchItem_SearchChanged(sender, e);
         }
 
-        private void AddTag_Click(object sender, RoutedEventArgs e)
-        {
-            if (WordsViewDataGrid.SelectedIndex < 0) return;
-
-            var idx = WordsViewDataGrid.SelectedIndex;
-
-        }
-
-        private void RemoveTag_Click(object sender, RoutedEventArgs e)
-        {
-            if (WordsViewDataGrid.SelectedIndex < 0) return;
-
-            var idx = WordsViewDataGrid.SelectedIndex;
-
-        }
-
         private void TagControl_TagsChanged(object sender, EventArgs e)
         {
+            if (WordsViewDataGrid.SelectedIndex < 0) return;
 
+            var tc = (TagControl)sender;
+            var idx = WordsViewDataGrid.SelectedIndex;
+            FDictionary.SetTags(
+                _Words[idx].dictionaryPath,
+                _Words[idx]._Word.WordID,
+                tc.Tags.ToArray()
+                );
+        }
+
+        private void TagControl_TagsRemoved(object sender, TagsRemovedEventArgs e)
+        {
+            if (WordsViewDataGrid.SelectedIndex < 0) return;
+
+            var tc = (TagControl)sender;
+            var idx = WordsViewDataGrid.SelectedIndex;
+            FDictionary.RemoveTag(
+                _Words[idx].dictionaryPath,
+                _Words[idx]._Word.WordID,
+                e.RemovedTag
+                );
         }
     }
 }

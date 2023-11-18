@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml.Packaging;
 using System.IO;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace FistirDictionary
 {
@@ -722,6 +723,58 @@ namespace FistirDictionary
             var result = db.TagWords.Where(tw => tw.WordID == wordID)
                 .Join(db.Tags, tw => tw.TagID, tag => tag.TagID, (tw, tag) => tag.TagName);
             return result.ToArray();
+        }
+
+        public static void SetTags(string dictionaryPath, int wordID, string[] tags)
+        {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
+            using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
+            foreach (var tag in tags)
+            {
+                var tagRow = db.Tags.FirstOrDefault(_tag => _tag.TagName == tag);
+                if (tagRow == null)
+                {
+                    EntityEntry<Tag> tagEntry = db.Tags.Add(new Tag { TagName = tag });
+                    db.TagWords.Add(new TagWord
+                    {
+                        TagID = tagEntry.Entity.TagID,
+                        WordID = wordID,
+                    });
+                    continue;
+                }
+                if (!db.TagWords
+                    .Join(
+                        db.Tags,
+                        tw => tw.TagID,
+                        _tag => _tag.TagID,
+                        (tw, _tag) => new { tw.WordID, tw.TagID, _tag.TagName })
+                    .Where(t => t.WordID == wordID && t.TagName == tag).Any())
+                {
+                    db.TagWords.Add(new TagWord
+                    {
+                        TagID = tagRow.TagID,
+                        WordID = wordID,
+                    });
+                }
+            }
+            db.SaveChanges();
+        }
+
+        public static void RemoveTag(string dictionaryPath, int wordID, string tag)
+        {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
+            using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
+            var tw = db.TagWords
+                .Single(_tw => _tw.WordID == wordID &&
+                    _tw.TagID == db.Tags.First(_tag => _tag.TagName == tag).TagID);
+            db.TagWords.Remove(tw);
+            db.SaveChanges();
         }
     }
 
