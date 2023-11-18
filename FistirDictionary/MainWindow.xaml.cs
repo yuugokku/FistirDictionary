@@ -112,7 +112,7 @@ namespace FistirDictionary
                                         Example = word.Example,
                                         UpdatedAt = word.UpdatedAt,
                                     },
-                                    Tags = word.Tags != null || word.Tags.Count() > 0 ? word.Tags.ToList() : new List<string> { "(+)" },
+                                    Tags = word.Tags.ToList(),
                                 }));
                     }
                 }
@@ -417,6 +417,11 @@ namespace FistirDictionary
             if (WordsViewDataGrid.SelectedIndex < 0) return;
 
             var idx = WordsViewDataGrid.SelectedIndex;
+
+        }
+
+        private void TagControl_TagsChanged(object sender, EventArgs e)
+        {
 
         }
     }

@@ -51,38 +51,12 @@
 
                             <DataGridTextColumn Header="見出し語" Binding="{Binding _Word.Headword}" />
 
-                            <DataGridTemplateColumn Header="タグ" Width="100">
+                            <DataGridTemplateColumn Header="タグ" Width="150">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <ItemsControl ItemsSource="{Binding Tags}">
-                                            <ItemsControl.ItemsPanel>
-                                                <ItemsPanelTemplate>
-                                                    <WrapPanel Orientation="Horizontal" />
-                                                </ItemsPanelTemplate>
-                                            </ItemsControl.ItemsPanel>
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <Grid Margin="1,1,2,1">
-                                                        <Grid.Resources>
-                                                            <SolidColorBrush x:Key="TagColor" Color="#FFDFF0FF" />
-                                                            <SolidColorBrush x:Key="TagColorHover" Color="#FF68B5FA" />
-                                                            <Style x:Key="HoverTagStyle" TargetType="{x:Type TextBlock}">
-                                                                <Setter Property="Background" Value="{StaticResource TagColor}" />
-                                                            </Style>
-                                                        </Grid.Resources>
-                                                        <Border CornerRadius="5" />
-                                                        <TextBlock Foreground="Black" Padding="2" Text="{Binding}" x:Name="TagName" Style="{StaticResource HoverTagStyle}">
-                                                            <TextBlock.ContextMenu>
-                                                                <ContextMenu>
-                                                                    <MenuItem Header="タグを追加" x:Name="AddTag" Click="AddTag_Click" />
-                                                                    <MenuItem Header="タグを削除" x:Name="RemoveTag" Click="RemoveTag_Click" />
-                                                                </ContextMenu>
-                                                            </TextBlock.ContextMenu>
-                                                        </TextBlock>
-                                                    </Grid>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
+                                        <Grid>
+                                            <local:TagControl Tags="{Binding Tags}" TagsChanged="TagControl_TagsChanged" />
+                                        </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
                             </DataGridTemplateColumn>

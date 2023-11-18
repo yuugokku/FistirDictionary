@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,16 +21,30 @@ namespace FistirDictionary
     /// </summary>
     public partial class TagControl : UserControl
     {
-        public List<string> Tags {
-            get { 
-                var tags = new List<string>();
-                foreach(var control in TagFlow.Children)
+        public static readonly DependencyProperty TagsProperty =
+            DependencyProperty.Register(
+                nameof(TagControl.Tags),
+                typeof(List<string>),
+                typeof(TagControl),
+                new FrameworkPropertyMetadata
                 {
-                    var grid = (Grid)control;
-                    var textBlock = (TextBlock)grid.Children[1];
-                    tags.Add(textBlock.Text);
-                }
-                return tags;
+                    DefaultValue = new List<string>(),
+                    BindsTwoWayByDefault = true,
+                    PropertyChangedCallback = OnTagsChanged,
+                });
+
+        private static void OnTagsChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            TagControl tc = (TagControl)d;
+            if (tc != null)
+            {
+                tc.Tags = (List<string>)e.NewValue;
+            }
+        }
+
+        public List<string> Tags {
+            get {
+                return (List<string>)GetValue(TagsProperty);
             }
             set
             {
@@ -42,8 +57,13 @@ namespace FistirDictionary
                         menuItem.Click += Delete_Click;
                         var menu = new ContextMenu();
                         menu.Items.Add(menuItem);
-                        var textBlock = new TextBlock { Text = tag, Padding = new Thickness(2) };
-                        textBlock.ContextMenu = menu;
+                        var textBlock = new TextBlock
+                        {
+                            Text = tag,
+                            Padding = new Thickness(2),
+                            Foreground = new SolidColorBrush(Color.FromArgb(255, 0, 0, 0)),
+                            ContextMenu = menu
+                        };
                         var border = new Border 
                         {
                             CornerRadius = new CornerRadius(5),
@@ -54,6 +74,8 @@ namespace FistirDictionary
                         grid.Children.Add(textBlock);
                         TagFlow.Children.Add(grid);
                     }
+                    SetValue(TagsProperty, value);
+                    OnTagsChanged(new EventArgs());
                 }
             }
         }
@@ -74,6 +96,15 @@ namespace FistirDictionary
             {
                 _preventSwitch = value;
             }
+        }
+
+        public event EventHandler<EventArgs>? TagsChanged;
+        [Browsable(true)]
+        [Description("Tagsプロパティが変更されたときにトリガーされます。")]
+        [Category("動作")]
+        protected virtual void OnTagsChanged(EventArgs e)
+        {
+            TagsChanged?.Invoke(this, e);
         }
 
         public TagControl()

@@ -30,6 +30,7 @@ namespace FistirDictionary
     public enum SearchMethod
     {
         RegexMatch,
+        TagMatch,
         Includes,
         StartsWith,
         EndsWith,
@@ -82,7 +83,7 @@ namespace FistirDictionary
             public string? Translation { get; set; }
             public string? Example { get; set; }
             public DateTime? UpdatedAt { get; set; }
-            public string[]? Tags { get; set; }
+            public IEnumerable<string>? Tags { get; set; }
 
             public string? ScansionScript { get; set; }
             public string? Scanned { get; set; }
@@ -95,7 +96,7 @@ namespace FistirDictionary
             public string? Translation { get; set; }
             public string? Example { get; set; }
             public DateTime? UpdatedAt { get; set; }
-            public string[]? Tags { get; set; }
+            public IEnumerable<string>? Tags { get; set; }
         }
 
         public static string GetSqliteConnectionString(string filepath)
@@ -322,10 +323,14 @@ namespace FistirDictionary
                     UpdatedAt = word.UpdatedAt,
                     Scanned = wr.Scanned,
                     ScansionScript = wr.ScansionScript,
-                    Tags = db.TagWords
-                        .Where(tw => tw.WordID == word.WordID)
-                        .Join(db.Tags, tw => tw.TagID, tag => tag.TagID, (tw, tag) => tag.TagName)
-                        .ToArray(),
+                    Tags = from tw in (
+                               from _tw in db.TagWords
+                               where _tw.WordID == word.WordID
+                               select _tw
+                           )
+                           join tag in db.Tags
+                           on tw.TagID equals tag.TagID
+                           select tag.TagName,
                 };
             foreach (var statement in statements)
             {
@@ -547,6 +552,9 @@ namespace FistirDictionary
                                 break;
                         }
                         break;
+                    case SearchMethod.TagMatch:
+                        dbQuery = dbQuery.Where(word => word.Tags.Contains(statement.Keyword));
+                        break;
                     case default(SearchMethod):
                         break;
                 }
@@ -736,7 +744,7 @@ namespace FistirDictionary
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseSqlite(_connectionString).LogTo(
+            optionsBuilder.UseSqlite(_connectionString, opt => opt.MinBatchSize(1).MaxBatchSize(100)).LogTo(
                 message => Debug.WriteLine(message),
                 new[] { DbLoggerCategory.Database.Name},
                 Microsoft.Extensions.Logging.LogLevel.Debug,
