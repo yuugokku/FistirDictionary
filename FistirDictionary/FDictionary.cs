@@ -776,6 +776,17 @@ namespace FistirDictionary
             db.TagWords.Remove(tw);
             db.SaveChanges();
         }
+
+        public static async Task<string[]> QueryTags(string dictionaryPath, string query)
+        {
+            if (!System.IO.File.Exists(dictionaryPath))
+            {
+                throw new DictionaryNotFoundExcepction($"{dictionaryPath} が見つかりません。");
+            }
+            using var db = new DictionaryContext(GetSqliteConnectionString(dictionaryPath));
+            var result = await db.Tags.Where(tag => tag.TagName.Contains(query)).Select(tag => tag.TagName).ToArrayAsync();
+            return result;
+        }
     }
 
     internal class DictionaryContext : DbContext

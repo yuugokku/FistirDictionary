@@ -55,7 +55,10 @@
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Grid>
-                                            <local:TagControl Tags="{Binding Tags}" TagsAdded="TagControl_TagsChanged" TagsRemoved="TagControl_TagsRemoved" />
+                                            <local:TagControl Tags="{Binding Tags}"
+                                                              TagsAdded="TagControl_TagsChanged"
+                                                              TagsRemoved="TagControl_TagsRemoved"
+                                                              DictionaryPath="{Binding dictionaryPath}" />
                                         </Grid>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>

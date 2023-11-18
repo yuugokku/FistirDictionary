@@ -114,8 +114,19 @@ namespace FistirDictionary
                 typeof(TagControl),
                 new FrameworkPropertyMetadata
                 {
-                    DefaultValue = ""
+                    DefaultValue = "",
+                    PropertyChangedCallback = OnDictionaryPathChanged,
                 });
+
+        private static void OnDictionaryPathChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            TagControl tc = (TagControl)d;
+            if (tc != null )
+            {
+                tc.DictionaryPath = (string)e.NewValue;
+            }
+        }
+
         public string DictionaryPath { get; set; }
 
         private bool _preventSwitch { get; set; }
